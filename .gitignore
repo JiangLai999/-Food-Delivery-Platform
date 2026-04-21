@@ -1,0 +1,14 @@
+# 忽略编译产物和临时文件
+*.class
+*.jar
+*.war
+*.log
+.DS_Store
+node_modules/
+dist/
+build/
+target/
+.idea/
+*.iml
+.vscode/
+*.local
