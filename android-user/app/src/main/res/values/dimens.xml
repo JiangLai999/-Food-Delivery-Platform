@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 标准尺寸 -->
+    <dimen name="spacing_xs">4dp</dimen>
+    <dimen name="spacing_s">8dp</dimen>
+    <dimen name="spacing_m">16dp</dimen>
+    <dimen name="spacing_l">24dp</dimen>
+    <dimen name="spacing_xl">32dp</dimen>
+
+    <!-- 文字大小 -->
+    <dimen name="text_xs">12sp</dimen>
+    <dimen name="text_s">14sp</dimen>
+    <dimen name="text_m">16sp</dimen>
+    <dimen name="text_l">18sp</dimen>
+    <dimen name="text_xl">20sp</dimen>
+    <dimen name="text_xxl">24sp</dimen>
+
+    <!-- 圆角半径 -->
+    <dimen name="corner_radius_small">4dp</dimen>
+    <dimen name="corner_radius_medium">8dp</dimen>
+    <dimen name="corner_radius_large">12dp</dimen>
+    <dimen name="button_corner_radius">8dp</dimen>
+
+    <!-- 组件尺寸 -->
+    <dimen name="avatar_size_small">32dp</dimen>
+    <dimen name="avatar_size_medium">48dp</dimen>
+    <dimen name="avatar_size_large">64dp</dimen>
+    <dimen name="icon_size">24dp</dimen>
+
+    <!-- Deligo 兼容尺寸 -->
+    <dimen name="button_padding_horizontal">24dp</dimen>
+    <dimen name="button_padding_vertical">12dp</dimen>
+    <dimen name="card_elevation">4dp</dimen>
+    <dimen name="search_bar_height">48dp</dimen>
+    
+    <!-- 缺失的尺寸 -->
+    <dimen name="text_base">16sp</dimen>
+    <dimen name="button_height_large">48dp</dimen>
+    <dimen name="input_height">48dp</dimen>
+    <dimen name="input_padding_horizontal">16dp</dimen>
+    
+    <!-- 紧急补充尺寸 -->
+    <dimen name="text_6xl">60sp</dimen>
+    <dimen name="text_5xl">48sp</dimen>
+    <dimen name="text_2xl">30sp</dimen>
+    
+    <!-- Drawable 引用的尺寸 -->
+    <dimen name="input_corner_radius">8dp</dimen>
+    <dimen name="corner_radius_extra_large">24dp</dimen>
+<!-- 补充缺失的大尺寸文字 (2026-02-20 修复) -->
+</resources>

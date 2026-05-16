@@ -1,0 +1,50 @@
+/* Theme system inspired by Meituan/Ele.me palettes */
+:root {
+  --bg: #f5f7fa;
+  --card: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --primary: #e53935; /* Meituan red */
+  --primary-dark: #c62828;
+  --accent: #ff9800;
+  --green: #2bb673;
+  --shadow: 0 6px 18px rgba(0,0,0,.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0b1020; --card: #141a2b; --text: #e5e7eb; }
+}
+/* Theme variants */
+[data-theme="meituan"] {
+  --brand: var(--primary);
+  --bg: #fff8f4;
+  --card: #ffffff;
+}
+[data-theme="eleme"] {
+  --brand: var(--green);
+  --bg: #f0f9f4;
+  --card: #ffffff;
+}
+/* Global layout helpers */
+html, body {
+  background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'PingFang SC', 'Noto Sans SC', sans-serif;
+}
+.dashboard { padding: 20px; }
+.el-card { background: var(--card); border-radius: 12px; box-shadow: var(--shadow); }
+.stat-card { background: var(--card); border-radius: 12px; }
+.stat-icon { color: rgba(0,0,0,.08); }
+.btn {
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,.08);
+  padding: 8px 14px;
+  background: var(--brand);
+  color: white;
+}
+.btn.secondary {
+  background: transparent;
+  color: var(--brand);
+  border: 1px solid var(--brand);
+}
+.theme-chip {
+  display:inline-flex; align-items:center; padding:6px 10px; border-radius: 999px; background: rgba(0,0,0,.04);
+}

@@ -1,0 +1,100 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+# SpringDoc OpenAPI 配置
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+    doc-expansion: none
+
+spring:
+  application:
+    name: food-delivery-system
+
+  # 数据源配置
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/food_delivery?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      test-while-idle: true
+      validation-query: SELECT 1
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+
+  # Jackson配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+# MyBatis-Plus配置
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.fooddelivery.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# Swagger配置
+springfox:
+  documentation:
+    enabled: true
+
+# JWT配置
+jwt:
+  secret: foodDeliverySystemSecretKey2024ForGraduationProject
+  expiration: 604800000  # 7天，单位毫秒
+
+# 高德地图配置
+amap:
+  key: a4d6ee2613113ed2072b9b771cce3ab1  # 高德地图Key
+  service-url: https://restapi.amap.com/v3
+
+# 骑手模拟配置
+rider:
+  simulator:
+    enabled: true
+    update-interval: 5000  # 位置更新间隔，单位毫秒（5秒）
+    speed: 30  # 骑手速度，单位km/h
+    total-points: 12  # 配送路线总点数（1分钟 = 12点 * 5秒）
+
+# 文件存储路径
+file:
+  upload-path: /uploads/
+  static-access-path: /static/**
+
+# 日志配置
+logging:
+  level:
+    root: info
+    com.fooddelivery: debug
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{50} - %msg%n"

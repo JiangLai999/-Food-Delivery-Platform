@@ -12,3 +12,12 @@ target/
 *.iml
 .vscode/
 *.local
+
+# 本地配置文件
+local.properties
+.env.development
+.env.production
+server_config.txt
+
+# Windows保留设备名
+nul

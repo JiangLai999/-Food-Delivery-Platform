@@ -1,0 +1,396 @@
+/* ==================== 商家端品牌文化样式 ==================== */
+
+:root {
+  --brand-primary: #FF8C00;
+  --brand-primary-light: #FFAA33;
+  --brand-primary-dark: #FF6B00;
+  --brand-orange: #FF5722;
+  --brand-dark-bg: #1a1a2e;
+  --brand-dark-bg-light: #16213e;
+  --brand-gray-bg: #F7FAFC;
+  --brand-text-primary: #1A202C;
+  --brand-text-secondary: #4A5568;
+  --brand-text-muted: #A0AEC0;
+  --brand-shadow-soft: 0 4px 20px rgba(255, 140, 0, 0.1);
+  --brand-shadow-medium: 0 8px 30px rgba(255, 140, 0, 0.15);
+  --brand-shadow-strong: 0 12px 40px rgba(255, 140, 0, 0.2);
+  --brand-gradient-orange: linear-gradient(135deg, #FF8C00 0%, #FFAA33 50%, #FF6B00 100%);
+  --brand-gradient-dark: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  --brand-gradient-subtle: linear-gradient(180deg, #FFF5F0 0%, #FFFFFF 100%);
+}
+
+/* 品牌字体 */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: 0.5px;
+}
+
+/* 品牌页脚 */
+.brand-footer {
+  background: var(--brand-dark-bg);
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  padding: 24px 0;
+  border-top: 1px solid rgba(255, 140, 0, 0.1);
+  margin-top: 40px;
+}
+
+.brand-footer .logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.brand-footer .logo {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+}
+
+.brand-footer h3 {
+  color: #FF8C00;
+  font-size: 18px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.brand-footer p {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 4px;
+}
+
+.brand-footer .divider {
+  width: 60px;
+  height: 2px;
+  background: var(--brand-gradient-orange);
+  margin: 16px auto;
+}
+
+/* 品牌横幅增强 */
+.brand-banner-enhanced {
+  background: var(--brand-gradient-dark);
+  padding: 24px 32px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 140, 0, 0.1);
+  box-shadow: var(--brand-shadow-medium);
+  position: relative;
+  overflow: hidden;
+}
+
+.brand-banner-enhanced::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 140, 0, 0.1) 0%, transparent 70%);
+}
+
+.brand-banner-enhanced::after {
+  content: '';
+  position: absolute;
+  bottom: -50px;
+  left: -50px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(255, 140, 0, 0.08) 0%, transparent 70%);
+}
+
+.brand-banner-enhanced .content {
+  position: relative;
+  z-index: 1;
+}
+
+/* 品牌卡片 */
+.brand-card-enhanced {
+  background: white;
+  border: 1px solid rgba(255, 140, 0, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--brand-shadow-soft);
+  position: relative;
+  overflow: hidden;
+}
+
+.brand-card-enhanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--brand-gradient-orange);
+}
+
+.brand-card-enhanced:hover {
+  box-shadow: var(--brand-shadow-medium);
+  transform: translateY(-4px);
+  transition: all 0.3s ease;
+  border-color: rgba(255, 140, 0, 0.3);
+}
+
+/* 品牌渐变文字 */
+.brand-gradient-text {
+  background: var(--brand-gradient-orange);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+/* 品牌徽章 */
+.brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.1) 0%, rgba(255, 140, 0, 0.05) 100%);
+  border: 1px solid rgba(255, 140, 0, 0.3);
+  border-radius: 20px;
+  color: #FF8C00;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* 品牌分割线 */
+.brand-divider-gradient {
+  height: 2px;
+  background: var(--brand-gradient-orange);
+  margin: 24px 0;
+  opacity: 0.6;
+}
+
+/* 品牌按钮 */
+.brand-button-gradient {
+  background: var(--brand-gradient-orange);
+  color: white;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--brand-shadow-soft);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.brand-button-gradient::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.brand-button-gradient:hover::before {
+  left: 100%;
+}
+
+.brand-button-gradient:hover {
+  box-shadow: var(--brand-shadow-medium);
+  transform: translateY(-2px);
+}
+
+.brand-button-gradient:active {
+  transform: translateY(0);
+}
+
+/* 品牌Loading */
+.brand-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.brand-loading .logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  margin-bottom: 16px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+.brand-loading .text {
+  color: #FF8C00;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* 品牌空状态 */
+.brand-empty-state {
+  text-align: center;
+  padding: 60px 40px;
+}
+
+.brand-empty-state .icon {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 24px;
+  border-radius: 20px;
+  opacity: 0.3;
+}
+
+.brand-empty-state .title {
+  font-size: 18px;
+  color: #1A202C;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.brand-empty-state .description {
+  font-size: 14px;
+  color: #A0AEC0;
+  margin-bottom: 24px;
+}
+
+/* 品牌统计卡片组 */
+.brand-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.brand-stats-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--brand-shadow-soft);
+  position: relative;
+  overflow: hidden;
+  border-left: 4px solid #FF8C00;
+}
+
+.brand-stats-card:hover {
+  box-shadow: var(--brand-shadow-medium);
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
+.brand-stats-card .label {
+  font-size: 14px;
+  color: #A0AEC0;
+  margin-bottom: 8px;
+}
+
+.brand-stats-card .value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1A202C;
+  margin-bottom: 8px;
+}
+
+.brand-stats-card .trend {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.brand-stats-card .trend.up {
+  color: #10B981;
+}
+
+.brand-stats-card .trend.down {
+  color: #EF4444;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F7FAFC;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--brand-gradient-orange);
+  border-radius: 5px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #FF6B00 0%, #FF5722 100%);
+}
+
+/* 品牌工具提示 */
+.brand-tooltip {
+  padding: 12px 16px;
+  background: var(--brand-dark-bg);
+  color: white;
+  border-radius: 12px;
+  font-size: 13px;
+  box-shadow: var(--brand-shadow-medium);
+}
+
+/* 品牌列表项 */
+.brand-list-item {
+  padding: 16px 20px;
+  background: white;
+  border: 1px solid rgba(255, 140, 0, 0.1);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.3s ease;
+}
+
+.brand-list-item:hover {
+  border-color: rgba(255, 140, 0, 0.3);
+  box-shadow: var(--brand-shadow-soft);
+  transform: translateX(4px);
+}
+
+/* 品牌标签 */
+.brand-tag {
+  padding: 6px 12px;
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.1) 0%, rgba(255, 140, 0, 0.05) 100%);
+  border: 1px solid rgba(255, 140, 0, 0.3);
+  border-radius: 8px;
+  color: #FF8C00;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 品牌输入框增强 */
+:deep(.el-input__wrapper.brand-input-wrapper) {
+  background: rgba(255, 140, 0, 0.02);
+  border: 2px solid rgba(255, 140, 0, 0.1);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-input__wrapper.brand-input-wrapper:hover) {
+  border-color: rgba(255, 140, 0, 0.3);
+  background: rgba(255, 140, 0, 0.05);
+}
+
+:deep(.el-input__wrapper.brand-input-wrapper.is-focus) {
+  border-color: #FF8C00;
+  background: rgba(255, 140, 0, 0.05);
+  box-shadow: 0 0 0 4px rgba(255, 140, 0, 0.1);
+}

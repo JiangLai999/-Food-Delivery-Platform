@@ -1,0 +1,166 @@
+<resources>
+    <!-- Basic Material theme for the user app, minimal tweaks for better visuals -->
+    <!-- Theme.FoodDelivery removed to avoid duplication; use Theme.FoodDeliveryNew instead -->
+    <style name="Theme.FoodDeliveryNew" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/primary</item>
+        <item name="android:colorBackground">@color/background</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:windowBackground">@color/background</item>
+    </style>
+    
+    <!-- ==================== React原型样式系统 ==================== -->
+    
+    <!-- 文本样式 -->
+    <style name="TextDisplay" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">@dimen/text_6xl</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/primary</item>
+    </style>
+    
+    <style name="TextHeading" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">@dimen/text_5xl</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+    
+    <style name="TextTitle" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">@dimen/text_2xl</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+    
+    <style name="TextSubtitle" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">@dimen/text_xl</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+    
+    <style name="TextBody" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">@dimen/text_base</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_body</item>
+    </style>
+    
+    <style name="TextCaption" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">@dimen/text_xs</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_hint</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.05</item>
+    </style>
+    
+    <style name="TextPrice" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">@dimen/text_5xl</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/primary</item>
+    </style>
+    
+    <!-- 按钮样式 -->
+    <style name="ButtonPrimary" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/bg_button_primary</item>
+        <item name="android:textColor">@color/button_primary_text</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">@dimen/text_base</item>
+        <item name="android:minHeight">@dimen/button_height_large</item>
+        <item name="android:paddingLeft">@dimen/button_padding_horizontal</item>
+        <item name="android:paddingRight">@dimen/button_padding_horizontal</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+    
+    <style name="ButtonSecondary" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/bg_button_secondary</item>
+        <item name="android:textColor">@color/button_secondary_text</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">@dimen/text_base</item>
+        <item name="android:minHeight">@dimen/button_height_large</item>
+        <item name="android:paddingLeft">@dimen/button_padding_horizontal</item>
+        <item name="android:paddingRight">@dimen/button_padding_horizontal</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+    
+    <!-- 卡片样式 -->
+    <style name="CardStandard" parent="CardView">
+        <item name="cardCornerRadius">40dp</item>
+        <item name="cardElevation">2dp</item>
+        <item name="cardBackgroundColor">@color/card_background</item>
+        <item name="contentPadding">24dp</item>
+    </style>
+    
+    <style name="CardLarge" parent="CardView">
+        <item name="cardCornerRadius">48dp</item>
+        <item name="cardElevation">2dp</item>
+        <item name="cardBackgroundColor">@color/card_background</item>
+        <item name="contentPadding">24dp</item>
+    </style>
+    
+    <!-- 输入框样式 -->
+    <style name="InputStandard" parent="Widget.AppCompat.EditText">
+        <item name="android:background">@drawable/bg_input</item>
+        <item name="android:textColor">@color/input_text</item>
+        <item name="android:textColorHint">@color/input_hint</item>
+        <item name="android:textSize">@dimen/text_base</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:minHeight">@dimen/input_height</item>
+        <item name="android:paddingLeft">@dimen/input_padding_horizontal</item>
+        <item name="android:paddingRight">@dimen/input_padding_horizontal</item>
+        <item name="android:backgroundTint">@null</item>
+    </style>
+    
+    <!-- 底部导航样式 -->
+    <style name="BottomNavigation" parent="Widget.MaterialComponents.BottomNavigationView">
+        <item name="itemIconSize">24dp</item>
+        <item name="itemTextAppearanceActive">@style/NavTextActive</item>
+        <item name="itemTextAppearanceInactive">@style/NavTextInactive</item>
+        <item name="itemIconTint">@drawable/selector_nav_color</item>
+        <item name="itemTextColor">@drawable/selector_nav_color</item>
+        <item name="android:background">@drawable/bg_bottom_nav</item>
+        <item name="itemPaddingTop">8dp</item>
+        <item name="itemPaddingBottom">8dp</item>
+    </style>
+    
+    <style name="NavTextActive" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">@dimen/text_xs</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    
+    <style name="NavTextInactive" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">@dimen/text_xs</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    
+    <!-- ==================== Deligo 文本样式 ==================== -->
+    <style name="TextDeligo.Heading.Medium" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/slate_900</item>
+    </style>
+    
+    <style name="TextDeligo.Heading.Large" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/slate_900</item>
+    </style>
+    
+    <style name="TextDeligo.Caption" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/slate_300</item>
+    </style>
+    
+    <style name="TextDeligo.Body" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/text_body</item>
+    </style>
+    
+    <style name="TextDeligo.Body.Bold" parent="TextDeligo.Body">
+        <item name="android:textStyle">bold</item>
+    </style>
+    
+    <style name="TextDeligo.Button" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+</resources>

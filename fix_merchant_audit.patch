@@ -1,0 +1,2785 @@
+From 863e28ecafdfc0d125370e451dd09751a4ef21de Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E5=A7=9C=E6=9D=A5?= <2198696697@qq.com>
+Date: Tue, 21 Apr 2026 20:45:25 +0800
+Subject: [PATCH] =?UTF-8?q?fix:=20=E4=BF=AE=E5=A4=8D=E5=95=86=E5=AE=B6?=
+ =?UTF-8?q?=E5=AE=A1=E6=A0=B8=E6=8B=92=E7=BB=9D=E5=8A=9F=E8=83=BD=20-=20?=
+ =?UTF-8?q?=E7=A7=BB=E9=99=A4=E4=B8=8D=E5=AD=98=E5=9C=A8=E7=9A=84=E9=AB=98?=
+ =?UTF-8?q?=E5=BE=B7API=20-=20=E6=B7=BB=E5=8A=A0rejectReason=E5=AD=97?=
+ =?UTF-8?q?=E6=AE=B5=20-=20=E6=98=BE=E7=A4=BA=E6=8B=92=E7=BB=9D=E7=8A=B6?=
+ =?UTF-8?q?=E6=80=81=E5=92=8C=E5=8E=9F=E5=9B=A0?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ .gitignore                                    |   14 +
+ .../screens/DynamicDeliveryTrackingScreen.kt  | 1138 +++++++++++++++++
+ .../com/fooddelivery/entity/Merchant.java     |   76 ++
+ .../service/impl/AdminServiceImpl.java        |  574 +++++++++
+ .../main/resources/sql/add_reject_reason.sql  |    2 +
+ backend/src/main/resources/sql/schema.sql     |  406 ++++++
+ web-admin/src/views/MerchantManagement.vue    |  498 ++++++++
+ 7 files changed, 2708 insertions(+)
+ create mode 100644 .gitignore
+ create mode 100644 android-user/app/src/main/java/com/fooddelivery/user/ui/compose/screens/DynamicDeliveryTrackingScreen.kt
+ create mode 100644 backend/src/main/java/com/fooddelivery/entity/Merchant.java
+ create mode 100644 backend/src/main/java/com/fooddelivery/service/impl/AdminServiceImpl.java
+ create mode 100644 backend/src/main/resources/sql/add_reject_reason.sql
+ create mode 100644 backend/src/main/resources/sql/schema.sql
+ create mode 100644 web-admin/src/views/MerchantManagement.vue
+
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..d31c591
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,14 @@
++# 忽略编译产物和临时文件
++*.class
++*.jar
++*.war
++*.log
++.DS_Store
++node_modules/
++dist/
++build/
++target/
++.idea/
++*.iml
++.vscode/
++*.local
+\ No newline at end of file
+diff --git a/android-user/app/src/main/java/com/fooddelivery/user/ui/compose/screens/DynamicDeliveryTrackingScreen.kt b/android-user/app/src/main/java/com/fooddelivery/user/ui/compose/screens/DynamicDeliveryTrackingScreen.kt
+new file mode 100644
+index 0000000..d381853
+--- /dev/null
++++ b/android-user/app/src/main/java/com/fooddelivery/user/ui/compose/screens/DynamicDeliveryTrackingScreen.kt
+@@ -0,0 +1,1138 @@
++package com.fooddelivery.user.ui.compose.screens
++
++import android.animation.ValueAnimator
++import android.content.Context
++import android.graphics.BitmapFactory
++import android.os.Bundle
++import android.os.Handler
++import android.os.Looper
++import android.util.Log
++import android.view.animation.LinearInterpolator
++import android.widget.Toast
++import androidx.compose.foundation.background
++import androidx.compose.foundation.layout.*
++import androidx.compose.foundation.shape.CircleShape
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.automirrored.filled.ArrowBack
++import androidx.compose.material.icons.filled.*
++import androidx.compose.material3.*
++import androidx.compose.runtime.*
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.graphics.Color
++import androidx.compose.ui.platform.LocalContext
++import androidx.compose.ui.text.font.FontWeight
++import androidx.compose.ui.unit.dp
++import androidx.compose.ui.unit.sp
++import androidx.compose.ui.viewinterop.AndroidView
++import com.amap.api.maps.AMap
++import com.amap.api.maps.CameraUpdateFactory
++import com.amap.api.maps.MapsInitializer
++import com.amap.api.maps.model.BitmapDescriptorFactory
++import com.amap.api.maps.model.LatLng
++import com.amap.api.maps.model.LatLngBounds
++import com.amap.api.maps.model.Marker
++import com.amap.api.maps.model.MarkerOptions
++import com.amap.api.maps.model.Polyline
++import com.amap.api.maps.model.PolylineOptions
++import com.amap.api.services.core.LatLonPoint
++import com.amap.api.services.route.BusRouteResult
++import com.amap.api.services.route.DriveRouteResult
++import com.amap.api.services.route.RideRouteResult
++import com.amap.api.services.route.RouteSearch
++import com.amap.api.services.route.WalkRouteResult
++import com.fooddelivery.user.model.Order
++import com.fooddelivery.user.model.DeliveryTask
++import com.fooddelivery.user.network.ApiClient
++import com.fooddelivery.user.ui.compose.theme.*
++import com.google.gson.Gson
++import com.google.gson.reflect.TypeToken
++import retrofit2.Call
++import retrofit2.Callback
++import retrofit2.Response
++
++/**
++ * 动态配送跟踪页面
++ * 
++ * 功能亮点：
++ * 1. 使用高德地图 RouteSearch 进行真实骑行路线规划
++ * 2. 自定义动画实现骑手图标沿路线平滑移动（替代SmoothMoveMarker）
++ * 3. 到达终点后自动调用后端接口完成配送
++ * 
++ *
++ */
++private val brandOrange = Color(0xFFFF8C00)
++private val successGreen = Color(0xFF22C55E)
++
++/**
++ * 配送状态枚举
++ */
++private enum class DeliveryState {
++    LOADING,           // 加载中
++    ROUTE_PLANNING,    // 路线规划中
++    DELIVERING,        // 配送中
++    ARRIVED,           // 已送达
++    ERROR              // 错误
++}
++
++/**
++ * 动态配送跟踪主屏幕
++ * 
++ * @param order 订单信息
++ * @param deliveryTask 配送任务信息
++ * @param userLatitude 用户纬度
++ * @param userLongitude 用户经度
++ * @param merchantLatitude 商家纬度
++ * @param merchantLongitude 商家经度
++ * @param merchantName 商家名称
++ * @param onBack 返回回调
++ */
++@Composable
++fun DynamicDeliveryTrackingScreen(
++    order: Order? = null,
++    deliveryTask: DeliveryTask? = null,
++    userLatitude: Double = 0.0,
++    userLongitude: Double = 0.0,
++    merchantLatitude: Double = 0.0,
++    merchantLongitude: Double = 0.0,
++    merchantName: String = "商家",
++    onBack: () -> Unit = {},
++    onDeliveryComplete: () -> Unit = {}
++) {
++    val context = LocalContext.current
++    
++    // ========== 状态管理 ==========
++    // 地图对象
++    var aMap by remember { mutableStateOf<AMap?>(null) }
++    var mapView by remember { mutableStateOf<com.amap.api.maps.MapView?>(null) }
++    
++    // 配送状态
++    var deliveryStatus by remember { mutableStateOf(DeliveryState.LOADING) }
++    
++    // 路线规划结果点集合
++    var routePoints by remember { mutableStateOf<List<LatLng>>(emptyList()) }
++    
++    // 骑手标记
++    var riderMarker by remember { mutableStateOf<Marker?>(null) }
++    
++    // 用户位置标记
++    var userMarker by remember { mutableStateOf<Marker?>(null) }
++    
++    // 商家位置标记
++    var merchantMarker by remember { mutableStateOf<Marker?>(null) }
++    
++    // 路线折线
++    var routePolyline by remember { mutableStateOf<Polyline?>(null) }
++    
++    // 是否已完成配送（防止重复提交）
++    var hasCompletedDelivery by remember { mutableStateOf(false) }
++    
++    // 预计送达时间
++    var estimatedTime by remember { mutableStateOf(15) }
++    
++    // 当前阶段描述
++    var currentPhaseDesc by remember { mutableStateOf("正在获取配送信息...") }
++    
++    // 动画进度
++    var progress by remember { mutableStateOf(0f) }
++    
++    // 动画对象
++    var animator by remember { mutableStateOf<ValueAnimator?>(null) }
++    
++    // 路线搜索对象
++    val routeSearch = remember {
++        // 先设置隐私合规（在Application中已设置，这里重复设置不影响）
++        RouteSearch(context)
++    }
++    
++    // 默认坐标（北京）- 使用有效范围内的坐标
++    val defaultUserLat = 39.904200  // 北京朝阳
++    val defaultUserLng = 116.407400
++    val defaultMerchantLat = 39.907761  // 北京
++    val defaultMerchantLng = 116.478927
++    
++    // 安全获取坐标，处理无效坐标（中国范围：经度73-135，纬度3-54）
++    fun getValidCoordinate(value: Double?, default: Double): Double {
++        if (value == null || value < 1.0) {
++            return default
++        }
++        // 检查是否在中国范围内
++        if (value < 73 || value > 135) {  // 可能是经度超范围
++            return default
++        }
++        // 额外检查：如果值在合理范围内但不在中国（需要两次判断，这里简化处理）
++        return value
++    }
++    
++    // 最终使用的坐标（优先使用deliveryTask中的坐标）
++    val finalUserLat = remember(userLatitude, deliveryTask) { 
++        val taskLat = deliveryTask?.deliveryLatitude?.toDouble()
++        val lat = getValidCoordinate(taskLat, 0.0).let { if (it > 0) it else getValidCoordinate(userLatitude.toDouble(), defaultUserLat) }
++        Log.d("DeliveryScreen", "finalUserLat: taskLat=$taskLat, userLatitude=$userLatitude, result=$lat")
++        lat
++    }
++    val finalUserLng = remember(userLongitude, deliveryTask) { 
++        val taskLng = deliveryTask?.deliveryLongitude?.toDouble()
++        val lng = getValidCoordinate(taskLng, 0.0).let { if (it > 0) it else getValidCoordinate(userLongitude.toDouble(), defaultUserLng) }
++        Log.d("DeliveryScreen", "finalUserLng: taskLng=$taskLng, userLongitude=$userLongitude, result=$lng")
++        lng
++    }
++    val finalMerchantLat = remember(merchantLatitude, deliveryTask) { 
++        val taskLat = deliveryTask?.pickupLatitude?.toDouble()
++        val lat = getValidCoordinate(taskLat, 0.0).let { if (it > 0) it else getValidCoordinate(merchantLatitude.toDouble(), defaultMerchantLat) }
++        Log.d("DeliveryScreen", "finalMerchantLat: taskLat=$taskLat, merchantLatitude=$merchantLatitude, result=$lat")
++        lat
++    }
++    val finalMerchantLng = remember(merchantLongitude, deliveryTask) { 
++        val taskLng = deliveryTask?.pickupLongitude?.toDouble()
++        val lng = getValidCoordinate(taskLng, 0.0).let { if (it > 0) it else getValidCoordinate(merchantLongitude.toDouble(), defaultMerchantLng) }
++        Log.d("DeliveryScreen", "finalMerchantLng: taskLng=$taskLng, merchantLongitude=$merchantLongitude, result=$lng")
++        lng
++    }
++
++    // 打印传入参数的完整调试信息
++    LaunchedEffect(Unit) {
++        Log.d("DeliveryScreen", "=== 坐标参数调试 ===")
++        Log.d("DeliveryScreen", "deliveryTask: $deliveryTask")
++        Log.d("DeliveryScreen", "deliveryTask pickup: ${deliveryTask?.pickupLatitude}, ${deliveryTask?.pickupLongitude}")
++        Log.d("DeliveryScreen", "deliveryTask delivery: ${deliveryTask?.deliveryLatitude}, ${deliveryTask?.deliveryLongitude}")
++        Log.d("DeliveryScreen", "userLatitude=$userLatitude, userLongitude=$userLongitude")
++        Log.d("DeliveryScreen", "merchantLatitude=$merchantLatitude, merchantLongitude=$merchantLongitude")
++    }
++
++    // 每次deliveryTask变化时打印
++    LaunchedEffect(deliveryTask) {
++        if (deliveryTask != null) {
++            Log.e("DATA_CHECK", "=== 开始检查从后端拿到的数据 ===")
++            Log.e("DATA_CHECK", "原始deliveryTask对象: orderId=${deliveryTask?.orderId}, status=${deliveryTask?.status}")
++            Log.e("DATA_CHECK", "准备传给高德的变量值: " + 
++                "\n 商户Lat: " + deliveryTask?.pickupLatitude +
++                "\n 商户Lng: " + deliveryTask?.pickupLongitude +
++                "\n 用户Lat: " + deliveryTask?.deliveryLatitude +
++                "\n 用户Lng: " + deliveryTask?.deliveryLongitude)
++            Log.e("DATA_CHECK", "=== 检查结束 ===")
++            
++            // 打印最终使用的坐标
++            Log.e("DATA_CHECK", "最终使用的坐标: merchant=($finalMerchantLng, $finalMerchantLat), user=($finalUserLng, $finalUserLat)")
++        }
++    }
++    
++    // 打印最终坐标（每次变化时）
++    LaunchedEffect(finalMerchantLat, finalMerchantLng, finalUserLat, finalUserLng) {
++        Log.e("DATA_CHECK", "坐标更新: merchant=($finalMerchantLng, $finalMerchantLat), user=($finalUserLng, $finalUserLat)")
++    }
++    
++    // 骑手实时位置（从后端获取）
++    var riderLocationLat by remember { mutableStateOf<Double?>(null) }
++    var riderLocationLng by remember { mutableStateOf<Double?>(null) }
++    var riderPhase by remember { mutableStateOf<String?>(null) }
++    
++    // 标记是否已初始化路线
++    var routeInitialized by remember { mutableStateOf(false) }
++    
++    // ========== 第一步：初始化地图并立即生成路线 ==========
++    LaunchedEffect(finalMerchantLat, finalMerchantLng, finalUserLat, finalUserLng) {
++        // 检查坐标是否有效
++        if (finalMerchantLat != 0.0 && finalMerchantLng != 0.0 && 
++            finalUserLat != 0.0 && finalUserLng != 0.0) {
++            
++            Log.d("DeliveryScreen", "初始化路线: merchant=$finalMerchantLng,$finalMerchantLat -> user=$finalUserLng,$finalUserLat")
++            
++            // 立即生成模拟路径，不等待deliveryTask
++            routePoints = generateSimulatedPath(finalMerchantLng, finalMerchantLat, finalUserLng, finalUserLat)
++            Log.d("DeliveryScreen", "立即生成了 ${routePoints.size} 个路线点")
++            
++            if (routePoints.isNotEmpty()) {
++                deliveryStatus = DeliveryState.DELIVERING
++                currentPhaseDesc = "骑手正在火速赶来"
++                routeInitialized = true
++            }
++        } else {
++            Log.w("DeliveryScreen", "坐标无效，跳过初始化: merchant=$finalMerchantLng,$finalMerchantLat, user=$finalUserLng,$finalUserLat")
++        }
++    }
++    
++    // ========== 定期从后端获取骑手位置并更新进度 ==========
++    LaunchedEffect(order?.id) {
++        val orderId = order?.id ?: return@LaunchedEffect
++        while (deliveryStatus != DeliveryState.ARRIVED && deliveryStatus != DeliveryState.ERROR) {
++            try {
++                val apiService = ApiClient.getInstance().apiService
++                
++                // 获取骑手位置
++                apiService.getDeliveryLocation(orderId).enqueue(object : Callback<com.fooddelivery.user.model.Result<com.fooddelivery.user.model.DeliveryLocation>> {
++                    override fun onResponse(call: Call<com.fooddelivery.user.model.Result<com.fooddelivery.user.model.DeliveryLocation>>, response: Response<com.fooddelivery.user.model.Result<com.fooddelivery.user.model.DeliveryLocation>>) {
++                        val body = response.body()
++                        if (body?.code == 200 && body.data != null) {
++                            val location = body.data
++                            
++                            // 根据currentPosition从routeData计算骑手位置，确保与路线一致
++                            val currentPosition = location.currentPosition ?: 0
++                            if (deliveryTask?.routeData != null && currentPosition > 0) {
++                                try {
++                                    val gson = Gson()
++                                    val type = object : TypeToken<List<Map<String, Any>>>() {}.type
++                                    val routeDataList: List<Map<String, Any>> = gson.fromJson(deliveryTask.routeData, type)
++                                    if (currentPosition < routeDataList.size) {
++                                        val step = routeDataList[currentPosition]
++                                        val rLat = (step["latitude"] as? Number)?.toDouble()
++                                        val rLng = (step["longitude"] as? Number)?.toDouble()
++                                        if (rLat != null && rLng != null) {
++                                            riderLocationLat = rLat
++                                            riderLocationLng = rLng
++                                            Log.d("DeliveryScreen", "从routeData计算骑手位置: pos=$currentPosition, lat=$rLat, lng=$rLng")
++                                        } else {
++                                            riderLocationLat = location.latitude?.toDouble()
++                                            riderLocationLng = location.longitude?.toDouble()
++                                        }
++                                    } else {
++                                        riderLocationLat = location.latitude?.toDouble()
++                                        riderLocationLng = location.longitude?.toDouble()
++                                    }
++                                } catch (e: Exception) {
++                                    riderLocationLat = location.latitude?.toDouble()
++                                    riderLocationLng = location.longitude?.toDouble()
++                                    Log.e("DeliveryScreen", "解析routeData失败: ${e.message}")
++                                }
++                            } else {
++                                riderLocationLat = location.latitude?.toDouble()
++                                riderLocationLng = location.longitude?.toDouble()
++                            }
++                            
++                            riderPhase = location.phase
++                            estimatedTime = location.estimatedTime ?: 1
++
++                            // 根据配送任务的状态计算进度
++                            val totalPoints = 90 // 总共90个路径点（12+6+72）
++                            progress = (currentPosition.toFloat() / totalPoints.toFloat()).coerceIn(0f, 1f)
++
++                            Log.d("DeliveryScreen", "进度更新: currentPosition=$currentPosition, totalPoints=$totalPoints, progress=$progress, phase=${location.phase}")
++
++                            // 更新阶段描述
++                            currentPhaseDesc = when (location.phase) {
++                                "going_to_merchant" -> "骑手正在前往商家"
++                                "picking_up" -> "骑手正在取餐"
++                                "delivering" -> {
++                                    val dist = location.distanceToUser ?: 0
++                                    if (dist > 0) "距离您还有 ${dist}米" else "配送中"
++                                }
++                                "arrived" -> "已送达"
++                                else -> location.description ?: "配送中"
++                            }
++
++                            // 检查是否已送达（状态为2或距离小于10米）
++                            if (location.status == 2 || location.phase == "arrived" || (location.distanceToUser != null && location.distanceToUser <= 10)) {
++                                if (!hasCompletedDelivery) {
++                                    hasCompletedDelivery = true
++                                    deliveryStatus = DeliveryState.ARRIVED
++                                    progress = 1f
++                                    currentPhaseDesc = "外卖已送达，祝您用餐愉快！"
++                                    completeDelivery(orderId, context, onDeliveryComplete)
++                                }
++                            }
++                        } else {
++                            Log.w("DeliveryScreen", "获取骑手位置失败: code=${body?.code}, message=${body?.message}")
++                        }
++                    }
++                    override fun onFailure(call: Call<com.fooddelivery.user.model.Result<com.fooddelivery.user.model.DeliveryLocation>>, t: Throwable) {
++                        Log.e("DeliveryScreen", "获取骑手位置失败: ${t.message}")
++                    }
++                })
++            } catch (e: Exception) {
++                Log.e("DeliveryScreen", "获取骑手位置异常: ${e.message}")
++            }
++            // 每3秒获取一次骑手位置
++            kotlinx.coroutines.delay(3000)
++        }
++    }
++    
++    // 清理函数
++    DisposableEffect(Unit) {
++        onDispose {
++            animator?.cancel()
++            mapView?.onDestroy()
++        }
++    }
++    
++    // ========== 第二步：创建地图视图 ==========
++    Box(modifier = Modifier.fillMaxSize()) {
++        AndroidView(
++            modifier = Modifier.fillMaxSize(),
++            factory = { ctx ->
++                // 创建高德地图 MapView
++                val mapView = com.amap.api.maps.MapView(ctx).apply {
++                    // 必须在 onCreate 中调用 MapView.onCreate()
++                    onCreate(Bundle())
++                    
++                    // 获取 AMap 对象并配置
++                    aMap = map.apply {
++                        // 地图加载完成监听
++                        setOnMapLoadedListener {
++                            // 使用经过验证的坐标
++                            val validUserLat = if (finalUserLat > 0) finalUserLat else defaultUserLat
++                            val validUserLng = if (finalUserLng > 0) finalUserLng else defaultUserLng
++                            val validMerchantLat = if (finalMerchantLat > 0) finalMerchantLat else defaultMerchantLat
++                            val validMerchantLng = if (finalMerchantLng > 0) finalMerchantLng else defaultMerchantLng
++                            
++                            // 计算中心点
++                            val centerLat = if (validUserLat > 0) validUserLat else 
++                                           if (validMerchantLat > 0) validMerchantLat else defaultUserLat
++                            val centerLng = if (validUserLng > 0) validUserLng else
++                                           if (validMerchantLng > 0) validMerchantLng else defaultUserLng
++                            
++                            // 移动到中心位置
++                            if (centerLat > 0 && centerLng > 0) {
++                                moveCamera(CameraUpdateFactory.newLatLngZoom(
++                                    LatLng(centerLat, centerLng), 15f))
++                            }
++                        }
++                        
++                        // 配置 UI 设置
++                        uiSettings.apply {
++                            // 隐藏缩放按钮（自定义缩放按钮更美观）
++                            isZoomControlsEnabled = false
++                            // 显示指南针
++                            isCompassEnabled = true
++                            // 隐藏定位按钮
++                            isMyLocationButtonEnabled = false
++                        }
++                    }
++                }
++                
++                // 设置路线搜索监听器（正确的方法名是 setRouteSearchListener）
++                routeSearch.setRouteSearchListener(object : RouteSearch.OnRouteSearchListener {
++                    override fun onBusRouteSearched(p0: com.amap.api.services.route.BusRouteResult?, p1: Int) {
++                        Log.d("DeliveryScreen", "公交路线搜索完成: $p1")
++                    }
++                    
++                    override fun onDriveRouteSearched(p0: com.amap.api.services.route.DriveRouteResult?, p1: Int) {
++                        Log.d("DeliveryScreen", "驾车路线搜索完成: $p1")
++                    }
++                    
++                    override fun onWalkRouteSearched(result: com.amap.api.services.route.WalkRouteResult?, errorCode: Int) {
++                        Log.d("DeliveryScreen", "步行路线搜索完成: $errorCode")
++                        
++                        if (errorCode == 1000 && result != null && result.paths != null && result.paths.isNotEmpty()) {
++                            // 步行路线规划成功
++                            val walkPath = result.paths[0]
++                            
++                            // 提取路线点
++                            val points = mutableListOf<LatLng>()
++                            for (step in walkPath.steps) {
++                                val stepPoints = step.polyline
++                                for (point in stepPoints) {
++                                    points.add(LatLng(point.latitude, point.longitude))
++                                }
++                            }
++                            
++                            if (points.isNotEmpty()) {
++                                routePoints = points
++                                deliveryStatus = DeliveryState.DELIVERING
++                                currentPhaseDesc = "骑手正在火速赶来"
++                            }
++                        } else {
++                            // 路线规划失败，使用模拟路径
++                            Log.w("DeliveryScreen", "路线规划失败，errorCode: $errorCode，使用模拟路径")
++                            routePoints = generateSimulatedPath(finalMerchantLng, finalMerchantLat, finalUserLng, finalUserLat)
++                            deliveryStatus = DeliveryState.DELIVERING
++                            currentPhaseDesc = "骑手正在火速赶来"
++                        }
++                    }
++                    
++                    override fun onRideRouteSearched(result: com.amap.api.services.route.RideRouteResult?, errorCode: Int) {
++                        Log.d("DeliveryScreen", "骑行路线搜索完成: $errorCode")
++                        
++                        if (errorCode == 1000 && result != null && result.paths != null && result.paths.isNotEmpty()) {
++                            // 骑行路线规划成功
++                            val ridePath = result.paths[0]
++                            
++                            // 提取路线点
++                            val points = mutableListOf<LatLng>()
++                            for (step in ridePath.steps) {
++                                val stepPoints = step.polyline
++                                for (point in stepPoints) {
++                                    points.add(LatLng(point.latitude, point.longitude))
++                                }
++                            }
++                            
++                            if (points.isNotEmpty()) {
++                                routePoints = points
++                                deliveryStatus = DeliveryState.DELIVERING
++                                currentPhaseDesc = "骑手正在火速赶来"
++                                
++                                // 计算预计送达时间（假设骑行速度 15km/h）
++                                val distanceMeters = ridePath.distance
++                                val timeMinutes = (distanceMeters / 1000.0 / 15.0 * 60).toInt() + 3 // 加上3分钟取餐时间
++                                estimatedTime = timeMinutes.coerceAtLeast(3)
++                            }
++                        } else {
++                            // 骑行路线规划失败，尝试步行路线
++                            Log.w("DeliveryScreen", "骑行路线规划失败，errorCode: $errorCode，尝试步行路线")
++                            planWalkRoute(routeSearch, finalMerchantLat, finalMerchantLng, finalUserLat, finalUserLng)
++                        }
++                    }
++                })
++                
++                mapView
++            },
++            update = { mapView ->
++                val currentMap = mapView.map
++                
++                // ========== 添加商家位置标记 ==========
++                if (finalMerchantLat != 0.0 && finalMerchantLng != 0.0) {
++                    if (merchantMarker == null) {
++                        // 创建商家图标（使用系统图标）
++                        merchantMarker = currentMap.addMarker(MarkerOptions()
++                            .position(LatLng(finalMerchantLat, finalMerchantLng))
++                            .title(merchantName)
++                            .snippet("取餐地点")
++                            .icon(BitmapDescriptorFactory.fromBitmap(
++                                BitmapFactory.decodeResource(context.resources, android.R.drawable.ic_menu_info_details)
++                            ))
++                            .draggable(false))
++                    }
++                }
++                
++                // ========== 添加用户位置标记 ==========
++                if (finalUserLat != 0.0 && finalUserLng != 0.0) {
++                    if (userMarker == null) {
++                        userMarker = currentMap.addMarker(MarkerOptions()
++                            .position(LatLng(finalUserLat, finalUserLng))
++                            .title("配送地址")
++                            .snippet("送餐地点")
++                            .icon(BitmapDescriptorFactory.fromBitmap(
++                                BitmapFactory.decodeResource(context.resources, android.R.drawable.ic_menu_mylocation)
++                            ))
++                            .draggable(false))
++                    }
++                }
++                
++                // ========== 执行路线规划 ==========
++                // 立即生成模拟路径作为默认显示
++                if (routePoints.isEmpty()) {
++                    // 首先生成模拟路径（确保地图上有路线显示）
++                    routePoints = generateSimulatedPath(finalMerchantLng, finalMerchantLat, finalUserLng, finalUserLat)
++                    deliveryStatus = DeliveryState.DELIVERING
++                    currentPhaseDesc = "骑手正在火速赶来"
++                    
++                    // 尝试骑行路线规划（可能失败，但地图已有路线）
++                    planRideRoute(routeSearch, finalMerchantLat, finalMerchantLng, finalUserLat, finalUserLng)
++                }
++                
++                // ========== 绘制商家标记 ==========
++                if (merchantMarker == null && finalMerchantLat != 0.0 && finalMerchantLng != 0.0) {
++                    val markerOptions = MarkerOptions()
++                        .position(LatLng(finalMerchantLat, finalMerchantLng))
++                        .title("商家")
++                        .snippet(merchantName)
++                        .anchor(0.5f, 1.0f)
++                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
++                    merchantMarker = currentMap.addMarker(markerOptions)
++                }
++                
++                // ========== 绘制用户标记 ==========
++                if (userMarker == null && finalUserLat != 0.0 && finalUserLng != 0.0) {
++                    val markerOptions = MarkerOptions()
++                        .position(LatLng(finalUserLat, finalUserLng))
++                        .title("送餐地址")
++                        .anchor(0.5f, 1.0f)
++                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
++                    userMarker = currentMap.addMarker(markerOptions)
++                }
++                
++                // ========== 绘制路线（优先使用后端提供的路线数据）==========
++                Log.d("DeliveryScreen", "routePoints empty=${routePoints.isEmpty()}, hasRouteData=${deliveryTask?.routeData != null}")
++                
++                // 优先使用deliveryTask中的路线数据（与后端一致）
++                if (deliveryTask?.routeData != null) {
++                    // 重新解析路线（确保与骑手位置一致）
++                    try {
++                        val gson = Gson()
++                        val type = object : TypeToken<List<Map<String, Any>>>() {}.type
++                        val routeDataList: List<Map<String, Any>> = gson.fromJson(deliveryTask.routeData, type)
++                        val newRoutePoints = routeDataList.mapNotNull { point ->
++                             val lng = (point["longitude"] as? Number)?.toDouble()
++                             val lat = (point["latitude"] as? Number)?.toDouble()
++                             // 严格验证坐标范围：经度 -180~180，纬度 -90~90，且在中国范围内
++                             if (lng != null && lat != null && 
++                                 lng >= -180 && lng <= 180 && 
++                                 lat >= -90 && lat <= 90 &&
++                                 lng >= 73 && lng <= 135 &&
++                                 lat >= 3 && lat <= 54) {
++                                 LatLng(lat, lng)
++                             } else {
++                                 Log.w("DeliveryScreen", "无效坐标: lng=$lng, lat=$lat")
++                                 null
++                             }
++                        }
++                        if (newRoutePoints.isNotEmpty()) {
++                            routePoints = newRoutePoints
++                            Log.d("DeliveryScreen", "从deliveryTask解析了 ${routePoints.size} 个路径点")
++                        } else {
++                            Log.w("DeliveryScreen", "路线数据全部无效，使用模拟路径")
++                        }
++                    } catch (e: Exception) {
++                        Log.e("DeliveryScreen", "解析路线数据失败: ${e.message}")
++                    }
++                }
++                
++                // 如果仍然没有路线，生成模拟路径
++                if (routePoints.isEmpty()) {
++                    Log.d("DeliveryScreen", "生成模拟路径: merchant=$finalMerchantLng,$finalMerchantLat -> user=$finalUserLng,$finalUserLat")
++                    routePoints = generateSimulatedPath(finalMerchantLng, finalMerchantLat, finalUserLng, finalUserLat)
++                    Log.d("DeliveryScreen", "生成了 ${routePoints.size} 个模拟路径点")
++                }
++                
++                // 绘制路线
++                if (routePoints.isNotEmpty()) {
++                    Log.d("DeliveryScreen", "绘制路线，点数: ${routePoints.size}, routePolyline=$routePolyline")
++                    // 移除旧的路线（如果有）
++                    routePolyline?.remove()
++                    routePolyline = currentMap.addPolyline(PolylineOptions()
++                        .addAll(routePoints)
++                        .width(15f)
++                        .color(android.graphics.Color.parseColor("#FF8C00"))
++                        .setUseTexture(false))
++                    
++                    // 调整地图视野
++                    val boundsBuilder = LatLngBounds.Builder()
++                    merchantMarker?.position?.let { boundsBuilder.include(it) }
++                    userMarker?.position?.let { boundsBuilder.include(it) }
++                    for (point in routePoints) {
++                        boundsBuilder.include(point)
++                    }
++                    try {
++                        currentMap.animateCamera(CameraUpdateFactory.newLatLngBounds(boundsBuilder.build(), 100))
++                    } catch (e: Exception) {
++                        val centerLat = (finalMerchantLat + finalUserLat) / 2
++                        val centerLng = (finalMerchantLng + finalUserLng) / 2
++                        currentMap.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(centerLat, centerLng), 14f))
++                    }
++                }
++                
++                // ========== 创建或更新骑手标记（使用后端真实位置）==========
++                if (deliveryStatus == DeliveryState.DELIVERING || deliveryStatus == DeliveryState.ROUTE_PLANNING) {
++                    // 如果还没有骑手标记，先创建一个
++                    if (riderMarker == null) {
++                        val markerOptions = MarkerOptions()
++                            .position(LatLng(finalMerchantLat, finalMerchantLng))
++                            .title("骑手")
++                            .snippet("配送中")
++                        try {
++                            markerOptions.icon(BitmapDescriptorFactory.fromResource(com.fooddelivery.user.R.drawable.ic_rider))
++                        } catch (e: Exception) {
++                            markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))
++                        }
++                        riderMarker = currentMap.addMarker(markerOptions)
++                        deliveryStatus = DeliveryState.DELIVERING
++                    }
++                    
++                    // 如果从后端获取到了骑手位置，更新标记
++                    val rLat = riderLocationLat
++                    val rLng = riderLocationLng
++                    // 验证骑手坐标在中国范围内
++                    if (rLat != null && rLng != null && rLat >= 3 && rLat <= 54 && rLng >= 73 && rLng <= 135) {
++                        riderMarker?.position = LatLng(rLat, rLng)
++                        // 移动地图视角跟随骑手
++                        currentMap.animateCamera(CameraUpdateFactory.newLatLng(LatLng(rLat, rLng)))
++                    }
++                }
++            }
++        )
++        
++        // ========== 顶部状态栏 ==========
++        Column(modifier = Modifier.fillMaxSize()) {
++            Row(
++                modifier = Modifier
++                    .fillMaxWidth()
++                    .padding(16.dp),
++                horizontalArrangement = Arrangement.SpaceBetween,
++                verticalAlignment = Alignment.CenterVertically
++            ) {
++                // 返回按钮
++                Surface(
++                    onClick = onBack,
++                    shape = RoundedCornerShape(20.dp),
++                    color = Color.White.copy(alpha = 0.9f)
++                ) {
++                    Box(modifier = Modifier.size(40.dp), contentAlignment = Alignment.Center) {
++                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
++                    }
++                }
++                
++                // 订单号
++                Surface(
++                    color = Color.White.copy(alpha = 0.9f),
++                    shape = RoundedCornerShape(20.dp)
++                ) {
++                    Text(
++                        "订单号: #${order?.orderNo?.takeLast(7) ?: "---"}",
++                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
++                        fontSize = 14.sp,
++                        fontWeight = FontWeight.SemiBold
++                    )
++                }
++                
++                // 分享按钮（预留）
++                Surface(
++                    onClick = { },
++                    shape = RoundedCornerShape(20.dp),
++                    color = Color.White.copy(alpha = 0.9f)
++                ) {
++                    Box(modifier = Modifier.size(40.dp), contentAlignment = Alignment.Center) {
++                        Icon(Icons.Filled.Share, contentDescription = "分享")
++                    }
++                }
++            }
++            
++            // ========== 预计送达时间卡片 ==========
++            Surface(
++                modifier = Modifier.padding(horizontal = 16.dp),
++                color = Color.White.copy(alpha = 0.9f),
++                shape = RoundedCornerShape(16.dp)
++            ) {
++                Row(
++                    modifier = Modifier.padding(12.dp),
++                    verticalAlignment = Alignment.CenterVertically
++                ) {
++                    Icon(
++                        Icons.Filled.Schedule,
++                        contentDescription = null,
++                        tint = brandOrange,
++                        modifier = Modifier.size(24.dp)
++                    )
++                    Spacer(modifier = Modifier.width(8.dp))
++                    Column {
++                        Text("预计送达", fontSize = 12.sp, color = Color.Gray)
++                        Text(
++                            if (deliveryStatus == DeliveryState.ARRIVED) "已送达" else "约${estimatedTime}分钟",
++                            fontSize = 20.sp,
++                            fontWeight = FontWeight.Bold,
++                            color = brandOrange
++                        )
++                    }
++                    Spacer(modifier = Modifier.width(16.dp))
++                    
++                    // 配送状态标签
++                    Surface(
++                        color = when (deliveryStatus) {
++                            DeliveryState.LOADING -> Color.Gray
++                            DeliveryState.ROUTE_PLANNING -> Color(0xFF3B82F6)
++                            DeliveryState.DELIVERING -> successGreen
++                            DeliveryState.ARRIVED -> successGreen
++                            DeliveryState.ERROR -> Color.Red
++                        }.copy(alpha = 0.1f),
++                        shape = RoundedCornerShape(8.dp)
++                    ) {
++                        Text(
++                            when (deliveryStatus) {
++                                DeliveryState.LOADING -> "加载中"
++                                DeliveryState.ROUTE_PLANNING -> "规划路线"
++                                DeliveryState.DELIVERING -> "配送中"
++                                DeliveryState.ARRIVED -> "已送达"
++                                DeliveryState.ERROR -> "错误"
++                            },
++                            fontSize = 12.sp,
++                            fontWeight = FontWeight.Bold,
++                            color = when (deliveryStatus) {
++                                DeliveryState.LOADING -> Color.Gray
++                                DeliveryState.ROUTE_PLANNING -> Color(0xFF3B82F6)
++                                DeliveryState.DELIVERING -> successGreen
++                                DeliveryState.ARRIVED -> successGreen
++                                DeliveryState.ERROR -> Color.Red
++                            },
++                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
++                        )
++                    }
++                }
++            }
++            
++            // ========== 配送进度条 ==========
++            Spacer(modifier = Modifier.weight(1f))
++            
++            // ========== 骑手信息卡片 ==========
++            Surface(
++                modifier = Modifier
++                    .fillMaxWidth()
++                    .padding(16.dp),
++                shape = RoundedCornerShape(16.dp),
++                color = Color.White.copy(alpha = 0.95f),
++                shadowElevation = 4.dp
++            ) {
++                Column(modifier = Modifier.padding(16.dp)) {
++                    Row(
++                        modifier = Modifier.fillMaxWidth(),
++                        horizontalArrangement = Arrangement.SpaceBetween,
++                        verticalAlignment = Alignment.CenterVertically
++                    ) {
++                        Column {
++                            Text(
++                                deliveryTask?.riderName ?: "骑手配送中",
++                                fontSize = 18.sp,
++                                fontWeight = FontWeight.Bold
++                            )
++                            Text(
++                                currentPhaseDesc,
++                                fontSize = 14.sp,
++                                color = Color.Gray
++                            )
++                        }
++                        if (deliveryStatus != DeliveryState.ARRIVED) {
++                            Surface(
++                                color = brandOrange.copy(alpha = 0.1f),
++                                shape = RoundedCornerShape(8.dp)
++                            ) {
++                                Text(
++                                    "约${estimatedTime}分钟",
++                                    fontSize = 14.sp,
++                                    fontWeight = FontWeight.Bold,
++                                    color = brandOrange,
++                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
++                                )
++                            }
++                        }
++                    }
++                    
++                    Spacer(modifier = Modifier.height(16.dp))
++                    
++                    Row(
++                        modifier = Modifier.fillMaxWidth(),
++                        horizontalArrangement = Arrangement.Start,
++                        verticalAlignment = Alignment.CenterVertically
++                    ) {
++                        Row(verticalAlignment = Alignment.CenterVertically) {
++                            Box {
++                                Surface(
++                                    modifier = Modifier.size(48.dp),
++                                    shape = CircleShape,
++                                    color = brandOrange.copy(alpha = 0.2f)
++                                ) {
++                                    Box(contentAlignment = Alignment.Center) {
++                                        Icon(
++                                            Icons.Filled.LocalShipping,
++                                            contentDescription = null,
++                                            tint = brandOrange,
++                                            modifier = Modifier.size(24.dp)
++                                        )
++                                    }
++                                }
++                                // 在线状态指示
++                                Box(
++                                    modifier = Modifier
++                                        .align(Alignment.BottomEnd)
++                                        .offset(x = 2.dp, y = 2.dp)
++                                        .size(12.dp)
++                                        .background(successGreen, CircleShape)
++                                )
++                            }
++                            Spacer(modifier = Modifier.width(12.dp))
++                            Column {
++                                Row(verticalAlignment = Alignment.CenterVertically) {
++                                    Text(
++                                        deliveryTask?.riderName ?: "骑手",
++                                        fontWeight = FontWeight.Bold,
++                                        fontSize = 16.sp
++                                    )
++                                    Spacer(modifier = Modifier.width(8.dp))
++                                    Icon(
++                                        Icons.Filled.Star,
++                                        contentDescription = null,
++                                        tint = brandOrange,
++                                        modifier = Modifier.size(12.dp)
++                                    )
++                                    Text(
++                                        " 4.9",
++                                        fontSize = 12.sp,
++                                        fontWeight = FontWeight.Bold,
++                                        color = brandOrange
++                                    )
++                                }
++                                Text(
++                                    "专业骑手",
++                                    fontSize = 12.sp,
++                                    color = Color.Gray
++                                )
++                            }
++                        }
++                    }
++                }
++            }
++        }
++    }
++}
++
++/**
++ * 骑行路线规划
++ * 使用高德地图 RouteSearch 进行骑行路线规划
++ * 
++ * @param routeSearch 路线搜索对象
++ * @param startLat 起点纬度
++ * @param startLng 起点经度
++ * @param endLat 终点纬度
++ * @param endLng 终点经度
++ */
++private fun planRideRoute(
++    routeSearch: RouteSearch,
++    startLat: Double,
++    startLng: Double,
++    endLat: Double,
++    endLng: Double
++) {
++    // 验证坐标有效性，防止"非法坐标值"错误
++    if (startLat <= 0 || startLng <= 0 || endLat <= 0 || endLng <= 0 ||
++        startLat > 90 || startLng > 180 || endLat > 90 || endLng > 180) {
++        Log.w("DeliveryScreen", "坐标无效，跳过路线规划: start=($startLng,$startLat), end=($endLng,$endLat)")
++        return
++    }
++    
++    try {
++        // 打印调试坐标
++        Log.d("DeliveryScreen", "planRideRoute: start=($startLng,$startLat), end=($endLng,$endLat)")
++        
++        // 创建起点和终点
++        val startPoint = LatLonPoint(startLat, startLng)
++        val endPoint = LatLonPoint(endLat, endLng)
++        
++        // 创建起终点参数
++        val fromAndTo = RouteSearch.FromAndTo(startPoint, endPoint)
++        
++        // 创建骑行路线查询参数
++        // 骑行模式：0-普通自行车，1-电动自行车
++        val query = RouteSearch.RideRouteQuery(fromAndTo, 0)
++        
++        // 异步搜索骑行路线
++        routeSearch.calculateRideRouteAsyn(query)
++        
++        Log.d("DeliveryScreen", "骑行路线规划请求已发送")
++    } catch (e: Exception) {
++        Log.e("DeliveryScreen", "骑行路线规划异常: ${e.message}")
++    }
++}
++
++/**
++ * 步行路线规划（骑行失败时的备选方案）
++ */
++private fun planWalkRoute(
++    routeSearch: RouteSearch,
++    startLat: Double,
++    startLng: Double,
++    endLat: Double,
++    endLng: Double
++) {
++    // 验证坐标有效性
++    if (startLat <= 0 || startLng <= 0 || endLat <= 0 || endLng <= 0 ||
++        startLat > 90 || startLng > 180 || endLat > 90 || endLng > 180) {
++        Log.w("DeliveryScreen", "坐标无效，跳过步行路线规划: start=($startLng,$startLat), end=($endLng,$endLat)")
++        return
++    }
++    
++    try {
++        val startPoint = LatLonPoint(startLat, startLng)
++        val endPoint = LatLonPoint(endLat, endLng)
++        
++        // 创建起终点参数
++        val fromAndTo = RouteSearch.FromAndTo(startPoint, endPoint)
++        
++        // 步行模式：0-推荐路线，1-最少步行，2-最舒适
++        val query = RouteSearch.WalkRouteQuery(fromAndTo, 0)
++        
++        routeSearch.calculateWalkRouteAsyn(query)
++        
++        Log.d("DeliveryScreen", "步行路线规划请求已发送")
++    } catch (e: Exception) {
++        Log.e("DeliveryScreen", "步行路线规划异常: ${e.message}")
++    }
++}
++
++/**
++ * 生成模拟曲线路径
++ * 当高德地图路线规划失败时使用
++ */
++private fun generateSimulatedPath(
++    merchantLng: Double, merchantLat: Double,
++    userLng: Double, userLat: Double
++): List<LatLng> {
++    val points = mutableListOf<LatLng>()
++    
++    // 严格验证坐标范围，使用默认值替换无效坐标
++    // 中国范围内：经度 73-135，纬度 3-54
++    val mLng = if (merchantLng < 73 || merchantLng > 135 || merchantLat < 3 || merchantLat > 54) {
++        Log.w("DeliveryScreen", "商家坐标无效，使用默认: $merchantLng, $merchantLat")
++        116.478927
++    } else merchantLng
++    
++    val mLat = if (merchantLng < 73 || merchantLng > 135 || merchantLat < 3 || merchantLat > 54) {
++        39.907761
++    } else merchantLat
++    
++    val uLng = if (userLng < 73 || userLng > 135 || userLat < 3 || userLat > 54) {
++        Log.w("DeliveryScreen", "用户坐标无效，使用默认: $userLng, $userLat")
++        116.407400
++    } else userLng
++    
++    val uLat = if (userLng < 73 || userLng > 135 || userLat < 3 || userLat > 54) {
++        39.904200
++    } else userLat
++    
++    Log.d("DeliveryScreen", "generateSimulatedPath: merchant=$mLng,$mLat, user=$uLng,$uLat")
++    
++    val numPoints = 75  // 增加点数，延长配送时间
++    
++    // 计算中点 - 使用验证后的坐标
++    val midLng = (mLng + uLng) / 2
++    val midLat = (mLat + uLat) / 2
++    
++    // 计算垂直偏移方向 - 使用验证后的坐标
++    val dx = uLng - mLng
++    val dy = uLat - mLat
++    val len = kotlin.math.sqrt(dx * dx + dy * dy)
++    if (len == 0.0) return points
++    
++    // 偏移量，使路线弯曲
++    val offset = 0.006
++    val perpX = -dy / len * offset
++    val perpY = dx / len * offset
++    
++    val curveLng = midLng + perpX
++    val curveLat = midLat + perpY
++    
++    // 使用二次贝塞尔曲线生成平滑路径 - 使用验证后的坐标
++    for (i in 0..numPoints) {
++        val t = i.toDouble() / numPoints
++        val oneMinusT = 1 - t
++        val lng = oneMinusT * oneMinusT * mLng + 2 * oneMinusT * t * curveLng + t * t * uLng
++        val lat = oneMinusT * oneMinusT * mLat + 2 * oneMinusT * t * curveLat + t * t * uLat
++        points.add(LatLng(lat, lng))
++    }
++    
++    return points
++}
++
++/**
++ * 完成配送
++ * 骑手到达目的地后，客户端主动调用此接口通知后端订单已完成
++ * 这是整个配送流程的关键闭环操作
++ * 
++ * @param orderId 订单ID
++ * @param context Android 上下文
++ * @param onSuccess 成功回调
++ */
++private fun completeDelivery(orderId: Long, context: android.content.Context, onSuccess: () -> Unit) {
++    if (orderId <= 0) {
++        Log.w("DeliveryScreen", "无效的订单ID: $orderId")
++        return
++    }
++    
++    Log.d("DeliveryScreen", "开始调用完成配送接口，订单ID: $orderId")
++    
++    // 调用后端完成配送接口
++    ApiClient.getInstance().apiService.completeDelivery(orderId).enqueue(object : Callback<com.fooddelivery.user.model.Result<String>> {
++        override fun onResponse(
++            call: Call<com.fooddelivery.user.model.Result<String>>,
++            response: Response<com.fooddelivery.user.model.Result<String>>
++        ) {
++            val result = response.body()
++            if (result != null && result.isSuccess) {
++                Log.d("DeliveryScreen", "配送完成接口调用成功: ${result.message}")
++                Toast.makeText(context, "配送任务已完成", Toast.LENGTH_SHORT).show()
++                onSuccess()
++            } else {
++                Log.e("DeliveryScreen", "配送完成接口调用失败: ${result?.message}")
++                Toast.makeText(context, "配送完成确认失败: ${result?.message}", Toast.LENGTH_SHORT).show()
++            }
++        }
++        
++        override fun onFailure(call: Call<com.fooddelivery.user.model.Result<String>>, t: Throwable) {
++            Log.e("DeliveryScreen", "配送完成接口网络错误: ${t.message}")
++            Toast.makeText(context, "网络错误: ${t.message}", Toast.LENGTH_SHORT).show()
++        }
++    })
++}
++
++/**
++ * 计算两个经纬度点之间的线性插值位置
++ * @param start 起点
++ * @param end 终点  
++ * @param fraction 插值比例（0-1）
++ * @return 插值后的经纬度点
++ */
++private fun interpolate(start: LatLng, end: LatLng, fraction: Double): LatLng {
++    val lat = start.latitude + (end.latitude - start.latitude) * fraction
++    val lng = start.longitude + (end.longitude - start.longitude) * fraction
++    return LatLng(lat, lng)
++}
++
++/**
++ * 计算路线总长度（米）
++ * 计算路线总长度（米）
++ * 使用 Haversine 公式计算两点之间的距离
++ */
++private fun calculateTotalDistance(points: List<LatLng>): Double {
++    if (points.size < 2) return 0.0
++    
++    var totalDistance = 0.0
++    for (i in 0 until points.size - 1) {
++        totalDistance += calculateDistance(points[i], points[i + 1])
++    }
++    return totalDistance
++}
++
++/**
++ * 使用 Haversine 公式计算两个经纬度点之间的距离（米）
++ */
++private fun calculateDistance(start: LatLng, end: LatLng): Double {
++    val R = 6371000.0  // 地球半径（米）
++    val lat1 = Math.toRadians(start.latitude)
++    val lat2 = Math.toRadians(end.latitude)
++    val deltaLat = Math.toRadians(end.latitude - start.latitude)
++    val deltaLng = Math.toRadians(end.longitude - start.longitude)
++    
++    val a = kotlin.math.sin(deltaLat / 2) * kotlin.math.sin(deltaLat / 2) +
++            kotlin.math.cos(lat1) * kotlin.math.cos(lat2) *
++            kotlin.math.sin(deltaLng / 2) * kotlin.math.sin(deltaLng / 2)
++    val c = 2 * kotlin.math.atan2(kotlin.math.sqrt(a), kotlin.math.sqrt(1 - a))
++    
++    return R * c
++}
++
++/**
++ * 配送步骤指示器组件
++ */
++@Composable
++fun DeliveryStepIndicator(label: String, isActive: Boolean) {
++    Column(horizontalAlignment = Alignment.CenterHorizontally) {
++        Box(
++            modifier = Modifier.size(24.dp),
++            contentAlignment = Alignment.Center
++        ) {
++            if (isActive) {
++                Box(
++                    modifier = Modifier
++                        .size(24.dp)
++                        .background(successGreen, CircleShape),
++                    contentAlignment = Alignment.Center
++                ) {
++                    Icon(
++                        Icons.Filled.Check,
++                        contentDescription = null,
++                        tint = Color.White,
++                        modifier = Modifier.size(16.dp)
++                    )
++                }
++            } else {
++                Box(
++                    modifier = Modifier
++                        .size(24.dp)
++                        .background(Color.LightGray, CircleShape)
++                )
++            }
++        }
++        Spacer(modifier = Modifier.height(4.dp))
++        Text(
++            label,
++            fontSize = 10.sp,
++            color = if (isActive) successGreen else Color.Gray
++        )
++    }
++}
+diff --git a/backend/src/main/java/com/fooddelivery/entity/Merchant.java b/backend/src/main/java/com/fooddelivery/entity/Merchant.java
+new file mode 100644
+index 0000000..425c5ff
+--- /dev/null
++++ b/backend/src/main/java/com/fooddelivery/entity/Merchant.java
+@@ -0,0 +1,76 @@
++package com.fooddelivery.entity;
++
++import com.baomidou.mybatisplus.annotation.*;
++import lombok.Data;
++
++import java.io.Serializable;
++import java.math.BigDecimal;
++import java.time.LocalDateTime;
++
++/**
++ * 商家实体类
++ */
++@Data
++@TableName("merchant")
++public class Merchant implements Serializable {
++
++    @TableId(type = IdType.AUTO)
++    private Long id;
++
++    private String phone;
++
++    private String password;
++
++    private String merchantName;
++
++    private String logo;
++
++    private String licenseNumber;
++
++    private String licenseImage;
++
++    private String contactPerson;
++
++    private String contactPhone;
++
++    private String province;
++
++    private String city;
++
++    private String district;
++
++    private String detailAddress;
++
++    private BigDecimal longitude;
++
++    private BigDecimal latitude;
++
++    private Long categoryId;
++
++    private String categoryName;
++
++    private String description;
++
++    private String businessHours;
++
++    private BigDecimal deliveryFee;
++
++    private BigDecimal minOrderAmount;
++
++    private BigDecimal avgRating;
++
++    private Integer salesVolume;
++
++    private Integer status;
++
++    private String rejectReason;
++
++    @TableField(fill = FieldFill.INSERT)
++    private LocalDateTime createTime;
++
++    @TableField(fill = FieldFill.INSERT_UPDATE)
++    private LocalDateTime updateTime;
++
++    @TableLogic
++    private Integer deleted;
++}
+diff --git a/backend/src/main/java/com/fooddelivery/service/impl/AdminServiceImpl.java b/backend/src/main/java/com/fooddelivery/service/impl/AdminServiceImpl.java
+new file mode 100644
+index 0000000..ecb9c9f
+--- /dev/null
++++ b/backend/src/main/java/com/fooddelivery/service/impl/AdminServiceImpl.java
+@@ -0,0 +1,574 @@
++package com.fooddelivery.service.impl;
++
++import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
++import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
++import com.fooddelivery.dto.AdminLoginDTO;
++import com.fooddelivery.entity.Admin;
++import com.fooddelivery.entity.FoodCategory;
++import com.fooddelivery.entity.Merchant;
++import com.fooddelivery.entity.MerchantCategory;
++import com.fooddelivery.entity.Order;
++import com.fooddelivery.entity.Review;
++import com.fooddelivery.entity.SystemNotice;
++import com.fooddelivery.entity.User;
++import com.fooddelivery.mapper.AdminMapper;
++import com.fooddelivery.mapper.FoodCategoryMapper;
++import com.fooddelivery.mapper.MerchantCategoryMapper;
++import com.fooddelivery.mapper.MerchantMapper;
++import com.fooddelivery.mapper.OrderMapper;
++import com.fooddelivery.mapper.ReviewMapper;
++import com.fooddelivery.mapper.SystemNoticeMapper;
++import com.fooddelivery.mapper.UserMapper;
++import com.fooddelivery.service.AdminService;
++import com.fooddelivery.utils.JwtUtil;
++import com.fooddelivery.utils.MD5Util;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.beans.factory.annotation.Value;
++import org.springframework.stereotype.Service;
++import org.springframework.transaction.annotation.Transactional;
++import org.springframework.util.StringUtils;
++
++import java.io.BufferedReader;
++import java.io.File;
++import java.io.IOException;
++import java.io.InputStreamReader;
++import java.time.LocalDateTime;
++import java.time.format.DateTimeFormatter;
++import java.util.HashMap;
++import java.util.List;
++import java.util.Map;
++
++import com.fooddelivery.websocket.NativeWebSocketServer;
++
++/**
++ * 管理员服务实现类
++ */
++@Service
++public class AdminServiceImpl implements AdminService {
++
++    // Manual logger since Lombok might not work
++    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AdminServiceImpl.class);
++
++    @Autowired
++    private AdminMapper adminMapper;
++
++    @Autowired
++    private MerchantMapper merchantMapper;
++
++    @Autowired
++    private UserMapper userMapper;
++
++    @Autowired
++    private SystemNoticeMapper systemNoticeMapper;
++
++    @Autowired
++    private FoodCategoryMapper foodCategoryMapper;
++
++    @Autowired
++    private MerchantCategoryMapper merchantCategoryMapper;
++
++    @Autowired
++    private JwtUtil jwtUtil;
++
++    @Value("${spring.datasource.url}")
++    private String dbUrl;
++
++    @Value("${spring.datasource.username}")
++    private String dbUsername;
++
++    @Value("${spring.datasource.password}")
++    private String dbPassword;
++
++    @Override
++    public String login(AdminLoginDTO dto) {
++        LambdaQueryWrapper<Admin> wrapper = new LambdaQueryWrapper<>();
++        wrapper.eq(Admin::getUsername, dto.getUsername());
++        Admin admin = adminMapper.selectOne(wrapper);
++
++        if (admin == null) {
++            throw new RuntimeException("管理员不存在");
++        }
++
++        if (!MD5Util.encrypt(dto.getPassword()).equals(admin.getPassword())) {
++            throw new RuntimeException("密码错误");
++        }
++
++        if (admin.getStatus() == 0) {
++            throw new RuntimeException("账号已禁用");
++        }
++
++        // 生成JWT Token
++        String token = jwtUtil.generateToken(admin.getId(), "admin");
++        log.info("管理员登录成功: {}", admin.getUsername());
++
++        return token;
++    }
++
++    @Override
++    public Admin getAdminById(Long adminId) {
++        return adminMapper.selectById(adminId);
++    }
++
++    @Override
++    @Transactional
++    public void approveMerchant(Long merchantId, Integer status, String reason) {
++        Merchant merchant = merchantMapper.selectById(merchantId);
++        if (merchant == null) {
++            throw new RuntimeException("商家不存在");
++        }
++
++        merchant.setStatus(status);
++        if (status == 0 && reason != null) {
++            merchant.setRejectReason(reason);
++        }
++        merchantMapper.updateById(merchant);
++
++        log.info("审核商家 {}, 状态: {}, 原因: {}", merchantId, status, reason);
++    }
++
++    @Override
++    public Page<Merchant> getPendingMerchants(Integer pageNum, Integer pageSize) {
++        Page<Merchant> page = new Page<>(pageNum, pageSize);
++        LambdaQueryWrapper<Merchant> wrapper = new LambdaQueryWrapper<>();
++        wrapper.in(Merchant::getStatus, 0, 4) // 待审核(0) 和已拒绝(4)
++                .orderByAsc(Merchant::getCreateTime);
++        return merchantMapper.selectPage(page, wrapper);
++    }
++
++    @Override
++    @Transactional
++    public void manageUser(Long userId, Integer status) {
++        User user = userMapper.selectById(userId);
++        if (user == null) {
++            throw new RuntimeException("用户不存在");
++        }
++
++        user.setStatus(status);
++        userMapper.updateById(user);
++
++        log.info("管理用户 {}, 状态: {}", userId, status);
++    }
++
++    @Override
++    public Page<User> getUserList(String phone, Integer status, Integer pageNum, Integer pageSize) {
++        Page<User> page = new Page<>(pageNum, pageSize);
++        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
++
++        if (StringUtils.hasText(phone)) {
++            wrapper.like(User::getPhone, phone);
++        }
++        if (status != null) {
++            wrapper.eq(User::getStatus, status);
++        }
++
++        wrapper.orderByDesc(User::getCreateTime);
++        return userMapper.selectPage(page, wrapper);
++    }
++
++    @Override
++    public User getUserById(Long id) {
++        return userMapper.selectById(id);
++    }
++
++    @Override
++    @Transactional
++    public void publishNotice(SystemNotice notice) {
++        notice.setStatus(1); // 发布状态
++        notice.setPublishTime(LocalDateTime.now());
++        systemNoticeMapper.insert(notice);
++
++        log.info("发布系统公告: {}", notice.getTitle());
++    }
++
++    @Override
++    public Page<SystemNotice> getNoticeList(Integer pageNum, Integer pageSize) {
++        Page<SystemNotice> page = new Page<>(pageNum, pageSize);
++        LambdaQueryWrapper<SystemNotice> wrapper = new LambdaQueryWrapper<>();
++        wrapper.orderByDesc(SystemNotice::getPublishTime);
++        return systemNoticeMapper.selectPage(page, wrapper);
++    }
++
++    @Override
++    public String backupData() {
++        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
++        String backupFileName = "food_delivery_backup_" + timestamp + ".sql";
++
++        // 从JDBC URL中提取数据库名
++        // String dbName = extractDatabaseName(dbUrl);
++        String dbName = "food_delivery"; // 硬编码数据库名
++        log.info("数据库名: {}, JDBC URL: {}", dbName, dbUrl);
++
++        // 创建备份目录
++        String backupDir = System.getProperty("user.dir") + File.separator + "backups";
++        File dir = new File(backupDir);
++        if (!dir.exists()) {
++            dir.mkdirs();
++        }
++
++        String backupFilePath = backupDir + File.separator + backupFileName;
++
++        try {
++            // 构建mysqldump命令，使用完整路径
++            String mysqldumpPath = "C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqldump";
++            String command;
++            String os = System.getProperty("os.name").toLowerCase();
++
++            if (os.contains("win")) {
++                // Windows系统 - 使用带引号的完整路径
++                command = String.format(
++                    "\"%s\" -u%s -p%s --databases %s --result-file=\"%s\"",
++                    mysqldumpPath, dbUsername, dbPassword, dbName, backupFilePath
++                );
++            } else {
++                // Linux/Mac系统
++                command = String.format(
++                    "mysqldump -u%s -p%s --databases %s --result-file='%s'",
++                    dbUsername, dbPassword, dbName, backupFilePath
++                );
++            }
++
++            log.info("执行备份命令: {}", command);
++
++            // 执行备份命令
++            Process process = Runtime.getRuntime().exec(command);
++
++            // 读取命令输出
++            BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
++            BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
++            String line;
++            StringBuilder errorOutput = new StringBuilder();
++            StringBuilder output = new StringBuilder();
++            
++            while ((line = errorReader.readLine()) != null) {
++                errorOutput.append(line).append("\n");
++            }
++            while ((line = outputReader.readLine()) != null) {
++                output.append(line).append("\n");
++            }
++
++            int exitCode = process.waitFor();
++
++            if (exitCode == 0) {
++                log.info("数据备份成功: {}", backupFilePath);
++                return backupFilePath;
++            } else {
++                log.error("数据备份失败，退出码: {}, 错误信息: {}", exitCode, errorOutput.toString());
++                throw new RuntimeException("数据备份失败: " + errorOutput.toString());
++            }
++
++        } catch (IOException | InterruptedException e) {
++            log.error("执行数据备份时发生异常", e);
++            throw new RuntimeException("数据备份失败: " + e.getMessage());
++        }
++    }
++
++    @Override
++    public void downloadBackup(String filename, javax.servlet.http.HttpServletResponse response) throws Exception {
++        String backupDir = System.getProperty("user.dir") + File.separator + "backups";
++        File backupFile = new File(backupDir + File.separator + filename);
++        
++        if (!backupFile.exists()) {
++            throw new RuntimeException("备份文件不存在");
++        }
++        
++        response.setContentType("application/octet-stream");
++        response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
++        response.setContentLengthLong(backupFile.length());
++        
++        try (java.io.FileInputStream fis = new java.io.FileInputStream(backupFile);
++             java.io.OutputStream os = response.getOutputStream()) {
++            byte[] buffer = new byte[4096];
++            int bytesRead;
++            while ((bytesRead = fis.read(buffer)) != -1) {
++                os.write(buffer, 0, bytesRead);
++            }
++            os.flush();
++        }
++    }
++
++    /**
++     * 从JDBC URL中提取数据库名
++     */
++    private String extractDatabaseName(String jdbcUrl) {
++        // jdbc:mysql://localhost:3306/food_delivery?...
++        try {
++            String[] parts = jdbcUrl.split("/");
++            String dbPart = parts[parts.length - 1];
++            if (dbPart.contains("?")) {
++                return dbPart.substring(0, dbPart.indexOf("?"));
++            }
++            return dbPart;
++        } catch (Exception e) {
++            log.error("解析数据库名失败", e);
++            return "food_delivery";
++        }
++    }
++
++    @Override
++    public Page<Merchant> getMerchantList(String keyword, Integer status, Integer pageNum, Integer pageSize) {
++        Page<Merchant> page = new Page<>(pageNum, pageSize);
++        LambdaQueryWrapper<Merchant> wrapper = new LambdaQueryWrapper<>();
++
++        if (StringUtils.hasText(keyword)) {
++            wrapper.like(Merchant::getMerchantName, keyword);
++        }
++        if (status != null) {
++            wrapper.eq(Merchant::getStatus, status);
++        }
++
++        wrapper.orderByDesc(Merchant::getCreateTime);
++        return merchantMapper.selectPage(page, wrapper);
++    }
++
++    @Override
++    public Merchant getMerchantById(Long id) {
++        return merchantMapper.selectById(id);
++    }
++
++    @Override
++    @Transactional
++    public void updateMerchantStatus(Long id, Integer status) {
++        Merchant merchant = merchantMapper.selectById(id);
++        if (merchant == null) {
++            throw new RuntimeException("商家不存在");
++        }
++        merchant.setStatus(status);
++        merchantMapper.updateById(merchant);
++        log.info("更新商家状态: {}, 状态: {}", id, status);
++    }
++
++    @Override
++    public List<MerchantCategory> getMerchantCategoryList() {
++        LambdaQueryWrapper<MerchantCategory> wrapper = new LambdaQueryWrapper<>();
++        wrapper.orderByAsc(MerchantCategory::getSortOrder);
++        return merchantCategoryMapper.selectList(wrapper);
++    }
++
++    @Override
++    @Transactional
++    public void addMerchantCategory(MerchantCategory category) {
++        category.setCreateTime(LocalDateTime.now());
++        merchantCategoryMapper.insert(category);
++        log.info("添加商家分类: {}", category.getCategoryName());
++    }
++
++    @Override
++    @Transactional
++    public void updateMerchantCategory(MerchantCategory category) {
++        merchantCategoryMapper.updateById(category);
++        log.info("更新商家分类: {}", category.getId());
++    }
++
++    @Override
++    @Transactional
++    public void deleteMerchantCategory(Long id) {
++        merchantCategoryMapper.deleteById(id);
++        log.info("删除商家分类: {}", id);
++    }
++
++    @Override
++    public List<FoodCategory> getCategoryList() {
++        LambdaQueryWrapper<FoodCategory> wrapper = new LambdaQueryWrapper<>();
++        wrapper.orderByAsc(FoodCategory::getSortOrder);
++        return foodCategoryMapper.selectList(wrapper);
++    }
++
++    @Override
++    @Transactional
++    public void addCategory(FoodCategory category) {
++        category.setCreateTime(LocalDateTime.now());
++        foodCategoryMapper.insert(category);
++        log.info("添加分类: {}", category.getCategoryName());
++    }
++
++    @Override
++    @Transactional
++    public void updateCategory(FoodCategory category) {
++        foodCategoryMapper.updateById(category);
++        log.info("更新分类: {}", category.getId());
++    }
++
++    @Override
++    @Transactional
++    public void deleteCategory(Long id) {
++        foodCategoryMapper.deleteById(id);
++        log.info("删除分类: {}", id);
++    }
++
++    @Override
++    @Transactional
++    public void updateNotice(SystemNotice notice) {
++        systemNoticeMapper.updateById(notice);
++        log.info("更新公告: {}", notice.getId());
++    }
++
++    @Override
++    @Transactional
++    public void deleteNotice(Long id) {
++        systemNoticeMapper.deleteById(id);
++        log.info("删除公告: {}", id);
++    }
++
++    @Override
++    @Transactional
++    public boolean changePassword(Long adminId, String oldPassword, String newPassword) {
++        Admin admin = adminMapper.selectById(adminId);
++        if (admin == null) {
++            throw new RuntimeException("管理员不存在");
++        }
++        
++        // 验证旧密码
++        String oldPasswordHash = MD5Util.encrypt(oldPassword);
++        if (!admin.getPassword().equals(oldPasswordHash)) {
++            return false;
++        }
++        
++        // 更新密码
++        String newPasswordHash = MD5Util.encrypt(newPassword);
++        admin.setPassword(newPasswordHash);
++        adminMapper.updateById(admin);
++        log.info("管理员修改密码成功: {}", adminId);
++        return true;
++    }
++
++    // 验证码存储（生产环境应使用Redis）
++    private static final java.util.Map<String, String> CODE_MAP = new java.util.HashMap<>();
++
++    @Override
++    public void sendVerifyCode(String username) {
++        LambdaQueryWrapper<Admin> wrapper = new LambdaQueryWrapper<>();
++        wrapper.eq(Admin::getUsername, username);
++        Admin admin = adminMapper.selectOne(wrapper);
++        
++        if (admin == null) {
++            throw new RuntimeException("管理员账号不存在");
++        }
++        
++        String code = String.format("%06d", (int) ((Math.random() * 9 + 1) * 100000));
++        CODE_MAP.put(username, code);
++        log.info("管理员找回密码验证码: {}, {}", username, code);
++    }
++
++    // 获取验证码（用于前端展示）
++    public String getVerifyCode(String username) {
++        return CODE_MAP.get(username);
++    }
++
++    @Override
++    public void resetPassword(String username, String code, String newPassword) {
++        log.info("重置密码: username={}, inputCode={}", username, code);
++        String savedCode = CODE_MAP.get(username);
++        log.info("savedCode={}", savedCode);
++        if (savedCode == null || !savedCode.equals(code)) {
++            log.error("验证码错误: expected={}, actual={}", savedCode, code);
++            throw new RuntimeException("验证码错误");
++        }
++        
++        LambdaQueryWrapper<Admin> wrapper = new LambdaQueryWrapper<>();
++        wrapper.eq(Admin::getUsername, username);
++        Admin admin = adminMapper.selectOne(wrapper);
++        
++        if (admin == null) {
++            throw new RuntimeException("管理员不存在");
++        }
++        
++        admin.setPassword(MD5Util.encrypt(newPassword));
++        adminMapper.updateById(admin);
++        CODE_MAP.remove(username);
++        log.info("管理员密码重置成功: {}", username);
++    }
++
++    @Autowired
++    private ReviewMapper reviewMapper;
++
++    @Override
++    public com.baomidou.mybatisplus.extension.plugins.pagination.Page<Review> getPendingReviews(Integer pageNum, Integer pageSize) {
++        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Review> page = 
++            new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(pageNum, pageSize);
++        LambdaQueryWrapper<Review> wrapper = new LambdaQueryWrapper<>();
++        wrapper.eq(Review::getStatus, 0); // 只返回待审核
++        wrapper.orderByDesc(Review::getCreateTime);
++        return reviewMapper.selectPage(page, wrapper);
++    }
++
++    @Override
++    public com.baomidou.mybatisplus.extension.plugins.pagination.Page<Review> getAllReviews(Integer pageNum, Integer pageSize, Integer status) {
++        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Review> page = 
++            new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(pageNum, pageSize);
++        LambdaQueryWrapper<Review> wrapper = new LambdaQueryWrapper<>();
++        if (status != null) {
++            wrapper.eq(Review::getStatus, status);
++        }
++        wrapper.orderByDesc(Review::getCreateTime);
++        return reviewMapper.selectPage(page, wrapper);
++    }
++
++    @Override
++    @Transactional
++    public void auditReview(Long reviewId, Integer status) {
++        Review review = reviewMapper.selectById(reviewId);
++        if (review == null) {
++            throw new RuntimeException("评价不存在");
++        }
++        
++        review.setStatus(status);
++        reviewMapper.updateById(review);
++        log.info("审核评价: {}, 状态: {}", reviewId, status);
++        
++        if (status == 1) {
++            if (review.getMerchantId() != null) {
++                try {
++                    Map<String, Object> notificationData = new HashMap<>();
++                    notificationData.put("type", "REVIEW_APPROVED");
++                    notificationData.put("reviewId", reviewId);
++                    notificationData.put("orderId", review.getOrderId());
++                    notificationData.put("content", review.getContent());
++                    notificationData.put("rating", review.getRating());
++                    notificationData.put("timestamp", review.getCreateTime());
++                    NativeWebSocketServer.sendChatMessageToMerchant(review.getMerchantId(), notificationData);
++                    log.info("已通知商家 {} 评价 {} 已通过审核", review.getMerchantId(), reviewId);
++                } catch (Exception e) {
++                    log.error("通知商家失败", e);
++                }
++            }
++        }
++    }
++
++    @Override
++    @Transactional
++    public void deleteReview(Long reviewId) {
++        reviewMapper.deleteById(reviewId);
++        log.info("删除评价: {}", reviewId);
++    }
++
++    @Autowired
++    private OrderMapper orderMapper;
++
++    @Override
++    public java.util.Map<String, Object> getPlatformStatistics() {
++        java.util.Map<String, Object> statistics = new java.util.HashMap<>();
++        
++        // 今日订单数
++        LocalDateTime startOfToday = java.time.LocalDate.now().atStartOfDay();
++        LambdaQueryWrapper<Order> todayWrapper = new LambdaQueryWrapper<>();
++        todayWrapper.ge(Order::getCreateTime, startOfToday);
++        statistics.put("todayOrderCount", orderMapper.selectCount(todayWrapper));
++        
++        // 今日销售额
++        java.util.List<Order> todayOrders = orderMapper.selectList(todayWrapper);
++        double todaySales = todayOrders.stream()
++            .mapToDouble(o -> o.getFinalAmount().doubleValue())
++            .sum();
++        statistics.put("todaySales", todaySales);
++        
++        // 用户总数
++        statistics.put("totalUserCount", userMapper.selectCount(null));
++        
++        // 活跃商家数
++        LambdaQueryWrapper<Merchant> merchantWrapper = new LambdaQueryWrapper<>();
++        merchantWrapper.eq(Merchant::getStatus, 1);
++        statistics.put("activeMerchantCount", merchantMapper.selectCount(merchantWrapper));
++        
++        return statistics;
++    }
++}
+diff --git a/backend/src/main/resources/sql/add_reject_reason.sql b/backend/src/main/resources/sql/add_reject_reason.sql
+new file mode 100644
+index 0000000..a6f8b1a
+--- /dev/null
++++ b/backend/src/main/resources/sql/add_reject_reason.sql
+@@ -0,0 +1,2 @@
++-- 添加商家拒绝原因字段
++ALTER TABLE `merchant` ADD COLUMN `reject_reason` VARCHAR(255) DEFAULT NULL COMMENT '拒绝原因' AFTER `status`;
+\ No newline at end of file
+diff --git a/backend/src/main/resources/sql/schema.sql b/backend/src/main/resources/sql/schema.sql
+new file mode 100644
+index 0000000..2351f2a
+--- /dev/null
++++ b/backend/src/main/resources/sql/schema.sql
+@@ -0,0 +1,406 @@
++-- 外卖订餐系统数据库建表脚本
++-- 数据库: food_delivery
++
++-- 创建数据库
++CREATE DATABASE IF NOT EXISTS `food_delivery` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
++USE `food_delivery`;
++
++-- ========== 用户相关表 ==========
++
++-- 用户表
++CREATE TABLE `user` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '用户ID',
++  `phone` VARCHAR(20) NOT NULL COMMENT '手机号',
++  `password` VARCHAR(64) NOT NULL COMMENT 'MD5加密后的密码',
++  `nickname` VARCHAR(50) DEFAULT NULL COMMENT '昵称',
++  `avatar` VARCHAR(255) DEFAULT NULL COMMENT '头像URL',
++  `gender` TINYINT DEFAULT 0 COMMENT '性别：0-未知，1-男，2-女',
++  `birthday` DATE DEFAULT NULL COMMENT '生日',
++  `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-正常',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
++  `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
++  PRIMARY KEY (`id`),
++  UNIQUE KEY `uk_phone` (`phone`),
++  KEY `idx_create_time` (`create_time`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
++
++-- 用户收货地址表
++CREATE TABLE `user_address` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '地址ID',
++  `user_id` BIGINT NOT NULL COMMENT '用户ID',
++  `receiver_name` VARCHAR(50) NOT NULL COMMENT '收货人姓名',
++  `receiver_phone` VARCHAR(20) NOT NULL COMMENT '收货人电话',
++  `province` VARCHAR(50) DEFAULT NULL COMMENT '省份',
++  `city` VARCHAR(50) DEFAULT NULL COMMENT '城市',
++  `district` VARCHAR(50) DEFAULT NULL COMMENT '区县',
++  `detail_address` VARCHAR(255) NOT NULL COMMENT '详细地址',
++  `longitude` DECIMAL(10,7) DEFAULT NULL COMMENT '经度',
++  `latitude` DECIMAL(10,7) DEFAULT NULL COMMENT '纬度',
++  `is_default` TINYINT DEFAULT 0 COMMENT '是否默认：0-否，1-是',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
++  `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除',
++  PRIMARY KEY (`id`),
++  KEY `idx_user_id` (`user_id`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户收货地址表';
++
++-- ========== 商家相关表 ==========
++
++-- 商家表
++CREATE TABLE `merchant` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '商家ID',
++  `phone` VARCHAR(20) NOT NULL COMMENT '登录手机号',
++  `password` VARCHAR(64) NOT NULL COMMENT 'MD5加密后的密码',
++  `merchant_name` VARCHAR(100) NOT NULL COMMENT '商家名称',
++  `logo` VARCHAR(255) DEFAULT NULL COMMENT '商家LOGO',
++  `banner` VARCHAR(255) DEFAULT NULL COMMENT 'banner图',
++  `license_number` VARCHAR(50) DEFAULT NULL COMMENT '营业执照号',
++  `license_image` VARCHAR(255) DEFAULT NULL COMMENT '营业执照图片',
++  `contact_person` VARCHAR(50) DEFAULT NULL COMMENT '联系人',
++  `contact_phone` VARCHAR(20) DEFAULT NULL COMMENT '联系电话',
++  `province` VARCHAR(50) DEFAULT NULL COMMENT '省份',
++  `city` VARCHAR(50) DEFAULT NULL COMMENT '城市',
++  `district` VARCHAR(50) DEFAULT NULL COMMENT '区县',
++  `detail_address` VARCHAR(255) DEFAULT NULL COMMENT '详细地址',
++  `longitude` DECIMAL(10,7) DEFAULT NULL COMMENT '经度',
++  `latitude` DECIMAL(10,7) DEFAULT NULL COMMENT '纬度',
++  `category_id` BIGINT DEFAULT NULL COMMENT '商家分类ID',
++  `category_name` VARCHAR(50) DEFAULT NULL COMMENT '商家分类名称',
++  `description` TEXT DEFAULT NULL COMMENT '商家简介',
++  `notice` TEXT DEFAULT NULL COMMENT '商家公告',
++  `business_hours` VARCHAR(100) DEFAULT NULL COMMENT '营业时间，如：09:00-22:00',
++  `delivery_fee` DECIMAL(10,2) DEFAULT 0.00 COMMENT '配送费',
++  `min_order_amount` DECIMAL(10,2) DEFAULT 0.00 COMMENT '起送价',
++  `pack_fee` DECIMAL(10,2) DEFAULT 0.00 COMMENT '打包费',
++  `avg_rating` DECIMAL(3,2) DEFAULT 5.00 COMMENT '平均评分',
++  `sales_volume` INT DEFAULT 0 COMMENT '销量',
++  `status` TINYINT DEFAULT 0 COMMENT '状态：0-待审核，1-正常营业，2-休息中，3-已下架，4-已拒绝',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
++  `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除',
++  PRIMARY KEY (`id`),
++  UNIQUE KEY `uk_phone` (`phone`),
++  KEY `idx_category_id` (`category_id`),
++  KEY `idx_status` (`status`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='商家表';
++
++-- 商家分类表
++CREATE TABLE `merchant_category` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '分类ID',
++  `category_name` VARCHAR(50) NOT NULL COMMENT '分类名称',
++  `icon` VARCHAR(255) DEFAULT NULL COMMENT '分类图标',
++  `sort_order` INT DEFAULT 0 COMMENT '排序',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除',
++  PRIMARY KEY (`id`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='商家分类表';
++
++-- 餐品表
++CREATE TABLE `food_item` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '餐品ID',
++  `merchant_id` BIGINT NOT NULL COMMENT '商家ID',
++  `category_id` BIGINT DEFAULT NULL COMMENT '餐品分类ID',
++  `category_name` VARCHAR(50) DEFAULT NULL COMMENT '餐品分类名称',
++  `food_name` VARCHAR(100) NOT NULL COMMENT '餐品名称',
++  `image` VARCHAR(255) DEFAULT NULL COMMENT '餐品图片',
++  `description` TEXT DEFAULT NULL COMMENT '餐品描述',
++  `price` DECIMAL(10,2) NOT NULL COMMENT '价格',
++  `original_price` DECIMAL(10,2) DEFAULT NULL COMMENT '原价',
++  `stock` INT DEFAULT 999 COMMENT '库存',
++  `sales_volume` INT DEFAULT 0 COMMENT '销量',
++  `status` TINYINT DEFAULT 1 COMMENT '状态：0-下架，1-上架',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
++  `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除',
++  PRIMARY KEY (`id`),
++  KEY `idx_merchant_id` (`merchant_id`),
++  KEY `idx_category_id` (`category_id`),
++  KEY `idx_status` (`status`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='餐品表';
++
++-- 餐品分类表
++CREATE TABLE `food_category` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '分类ID',
++  `merchant_id` BIGINT NOT NULL COMMENT '商家ID',
++  `category_name` VARCHAR(50) NOT NULL COMMENT '分类名称',
++  `sort_order` INT DEFAULT 0 COMMENT '排序',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除',
++  PRIMARY KEY (`id`),
++  KEY `idx_merchant_id` (`merchant_id`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='餐品分类表';
++
++-- ========== 订单相关表 ==========
++
++-- 订单表
++CREATE TABLE `orders` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '订单ID',
++  `order_no` VARCHAR(32) NOT NULL COMMENT '订单号',
++  `user_id` BIGINT NOT NULL COMMENT '用户ID',
++  `merchant_id` BIGINT NOT NULL COMMENT '商家ID',
++  `rider_id` BIGINT DEFAULT NULL COMMENT '骑手ID',
++  `total_amount` DECIMAL(10,2) NOT NULL COMMENT '商品总金额',
++  `delivery_fee` DECIMAL(10,2) DEFAULT 0.00 COMMENT '配送费',
++  `pack_fee` DECIMAL(10,2) DEFAULT 0.00 COMMENT '打包费',
++  `final_amount` DECIMAL(10,2) NOT NULL COMMENT '实付金额',
++  `receiver_name` VARCHAR(50) NOT NULL COMMENT '收货人',
++  `receiver_phone` VARCHAR(20) NOT NULL COMMENT '收货电话',
++  `receiver_address` VARCHAR(255) NOT NULL COMMENT '收货地址',
++  `receiver_longitude` DECIMAL(10,7) DEFAULT NULL COMMENT '收货地址经度',
++  `receiver_latitude` DECIMAL(10,7) DEFAULT NULL COMMENT '收货地址纬度',
++  `remark` VARCHAR(255) DEFAULT NULL COMMENT '订单备注',
++  `status` TINYINT DEFAULT 0 COMMENT '订单状态：0-待支付，1-待接单，2-已接单，3-配送中，4-已完成，5-已取消',
++  `pay_status` TINYINT DEFAULT 0 COMMENT '支付状态：0-未支付，1-已支付',
++  `pay_time` DATETIME DEFAULT NULL COMMENT '支付时间',
++  `accept_time` DATETIME DEFAULT NULL COMMENT '接单时间',
++  `delivery_time` DATETIME DEFAULT NULL COMMENT '开始配送时间',
++  `complete_time` DATETIME DEFAULT NULL COMMENT '完成时间',
++  `cancel_reason` VARCHAR(255) DEFAULT NULL COMMENT '取消原因',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
++  `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除',
++  PRIMARY KEY (`id`),
++  UNIQUE KEY `uk_order_no` (`order_no`),
++  KEY `idx_user_id` (`user_id`),
++  KEY `idx_merchant_id` (`merchant_id`),
++  KEY `idx_rider_id` (`rider_id`),
++  KEY `idx_status` (`status`),
++  KEY `idx_create_time` (`create_time`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单表';
++
++-- 订单明细表
++CREATE TABLE `order_item` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '明细ID',
++  `order_id` BIGINT NOT NULL COMMENT '订单ID',
++  `food_id` BIGINT NOT NULL COMMENT '餐品ID',
++  `food_name` VARCHAR(100) NOT NULL COMMENT '餐品名称',
++  `food_image` VARCHAR(255) DEFAULT NULL COMMENT '餐品图片',
++  `price` DECIMAL(10,2) NOT NULL COMMENT '单价',
++  `quantity` INT NOT NULL COMMENT '数量',
++  `subtotal` DECIMAL(10,2) NOT NULL COMMENT '小计',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  PRIMARY KEY (`id`),
++  KEY `idx_order_id` (`order_id`),
++  KEY `idx_food_id` (`food_id`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单明细表';
++
++-- 订单状态日志表
++CREATE TABLE `order_status_log` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '日志ID',
++  `order_id` BIGINT NOT NULL COMMENT '订单ID',
++  `status` TINYINT NOT NULL COMMENT '订单状态',
++  `remark` VARCHAR(255) DEFAULT NULL COMMENT '备注',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  PRIMARY KEY (`id`),
++  KEY `idx_order_id` (`order_id`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单状态日志表';
++
++-- ========== 配送相关表 ==========
++
++-- 骑手表
++CREATE TABLE `rider` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '骑手ID',
++  `rider_name` VARCHAR(50) NOT NULL COMMENT '骑手姓名',
++  `phone` VARCHAR(20) NOT NULL COMMENT '手机号',
++  `status` TINYINT DEFAULT 1 COMMENT '状态：0-休息，1-待接单，2-配送中',
++  `current_longitude` DECIMAL(10,7) DEFAULT NULL COMMENT '当前位置经度',
++  `current_latitude` DECIMAL(10,7) DEFAULT NULL COMMENT '当前位置纬度',
++  `total_orders` INT DEFAULT 0 COMMENT '总配送订单数',
++  `rating` DECIMAL(3,2) DEFAULT 5.00 COMMENT '评分',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
++  PRIMARY KEY (`id`),
++  UNIQUE KEY `uk_phone` (`phone`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='骑手表';
++
++-- 骑手位置记录表
++CREATE TABLE `rider_location` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '记录ID',
++  `rider_id` BIGINT NOT NULL COMMENT '骑手ID',
++  `order_id` BIGINT DEFAULT NULL COMMENT '订单ID',
++  `longitude` DECIMAL(10,7) NOT NULL COMMENT '经度',
++  `latitude` DECIMAL(10,7) NOT NULL COMMENT '纬度',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  PRIMARY KEY (`id`),
++  KEY `idx_rider_id` (`rider_id`),
++  KEY `idx_order_id` (`order_id`),
++  KEY `idx_create_time` (`create_time`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='骑手位置记录表';
++
++-- 配送任务表
++CREATE TABLE `delivery_task` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '任务ID',
++  `order_id` BIGINT NOT NULL COMMENT '订单ID',
++  `merchant_id` BIGINT NOT NULL COMMENT '商家ID',
++  `rider_id` BIGINT NOT NULL COMMENT '骑手ID',
++  `pickup_longitude` DECIMAL(10,7) NOT NULL COMMENT '取餐地点经度',
++  `pickup_latitude` DECIMAL(10,7) NOT NULL COMMENT '取餐地点纬度',
++  `delivery_longitude` DECIMAL(10,7) NOT NULL COMMENT '送达地点经度',
++  `delivery_latitude` DECIMAL(10,7) NOT NULL COMMENT '送达地点纬度',
++  `route_data` TEXT DEFAULT NULL COMMENT '路线数据（JSON格式）',
++  `current_position` INT DEFAULT 0 COMMENT '当前路线点位置',
++  `estimated_time` INT DEFAULT NULL COMMENT '预计送达时间（分钟）',
++  `total_distance` INT DEFAULT NULL COMMENT '总距离（米）',
++  `status` TINYINT DEFAULT 0 COMMENT '状态：0-待取餐，1-配送中，2-已送达',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
++  PRIMARY KEY (`id`),
++  UNIQUE KEY `uk_order_id` (`order_id`),
++  KEY `idx_rider_id` (`rider_id`),
++  KEY `idx_merchant_id` (`merchant_id`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='配送任务表';
++
++-- ========== 优惠券相关表 ==========
++
++-- 优惠券表
++CREATE TABLE `coupon` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '优惠券ID',
++  `title` VARCHAR(100) NOT NULL COMMENT '优惠券标题',
++  `description` VARCHAR(255) DEFAULT NULL COMMENT '描述',
++  `amount` DECIMAL(10,2) NOT NULL COMMENT '优惠金额',
++  `min_spend` DECIMAL(10,2) DEFAULT NULL COMMENT '最低消费金额',
++  `start_time` DATETIME NOT NULL COMMENT '开始时间',
++  `end_time` DATETIME NOT NULL COMMENT '结束时间',
++  `total_count` INT DEFAULT 0 COMMENT '发放总量',
++  `remain_count` INT DEFAULT 0 COMMENT '剩余数量',
++  `merchant_id` BIGINT DEFAULT NULL COMMENT '商家ID（null为平台券）',
++  `category_ids` VARCHAR(255) DEFAULT NULL COMMENT '适用分类ID（逗号分隔）',
++  `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
++  PRIMARY KEY (`id`),
++  KEY `idx_merchant_id` (`merchant_id`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='优惠券表';
++
++-- 用户优惠券表
++CREATE TABLE `user_coupon` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'ID',
++  `user_id` BIGINT NOT NULL COMMENT '用户ID',
++  `coupon_id` BIGINT NOT NULL COMMENT '优惠券ID',
++  `order_id` BIGINT DEFAULT NULL COMMENT '使用的订单ID',
++  `status` TINYINT DEFAULT 0 COMMENT '状态：0-未使用，1-已使用，2-已过期',
++  `use_time` DATETIME DEFAULT NULL COMMENT '使用时间',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '领取时间',
++  PRIMARY KEY (`id`),
++  KEY `idx_user_id` (`user_id`),
++  KEY `idx_coupon_id` (`coupon_id`),
++  KEY `idx_order_id` (`order_id`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户优惠券表';
++
++-- ========== 评价相关表 ==========
++
++-- 评价表
++CREATE TABLE `review` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '评价ID',
++  `order_id` BIGINT NOT NULL COMMENT '订单ID',
++  `user_id` BIGINT NOT NULL COMMENT '用户ID',
++  `merchant_id` BIGINT NOT NULL COMMENT '商家ID',
++  `rating` TINYINT NOT NULL COMMENT '评分：1-5星',
++  `taste_rating` TINYINT DEFAULT NULL COMMENT '口味评分：1-5星',
++  `portion_rating` TINYINT DEFAULT NULL COMMENT '分量评分：1-5星',
++  `content` TEXT DEFAULT NULL COMMENT '评价内容',
++  `is_anonymous` TINYINT DEFAULT 0 COMMENT '是否匿名',
++  `status` TINYINT DEFAULT 0 COMMENT '审核状态: 0-待审核, 1-已通过, 2-已拒绝',
++  `reply_content` TEXT DEFAULT NULL COMMENT '商家回复内容',
++  `reply_time` DATETIME DEFAULT NULL COMMENT '回复时间',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除',
++  PRIMARY KEY (`id`),
++  UNIQUE KEY `uk_order_id` (`order_id`),
++  KEY `idx_user_id` (`user_id`),
++  KEY `idx_merchant_id` (`merchant_id`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='评价表';
++
++-- 评价图片表
++CREATE TABLE `review_image` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '图片ID',
++  `review_id` BIGINT NOT NULL COMMENT '评价ID',
++  `image_url` VARCHAR(255) NOT NULL COMMENT '图片URL',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  PRIMARY KEY (`id`),
++  KEY `idx_review_id` (`review_id`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='评价图片表';
++
++-- ========== 系统相关表 ==========
++
++-- 管理员表
++CREATE TABLE `admin` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '管理员ID',
++  `username` VARCHAR(50) NOT NULL COMMENT '用户名',
++  `password` VARCHAR(64) NOT NULL COMMENT 'MD5加密后的密码',
++  `nickname` VARCHAR(50) DEFAULT NULL COMMENT '昵称',
++  `avatar` VARCHAR(255) DEFAULT NULL COMMENT '头像',
++  `email` VARCHAR(100) DEFAULT NULL COMMENT '邮箱',
++  `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-正常',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
++  `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除',
++  PRIMARY KEY (`id`),
++  UNIQUE KEY `uk_username` (`username`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='管理员表';
++
++-- 系统公告表
++CREATE TABLE `system_notice` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '公告ID',
++  `title` VARCHAR(200) NOT NULL COMMENT '公告标题',
++  `content` TEXT NOT NULL COMMENT '公告内容',
++  `notice_type` TINYINT DEFAULT 0 COMMENT '公告类型：0-系统通知，1-活动通知，2-维护通知',
++  `target_type` TINYINT DEFAULT 0 COMMENT '目标对象：0-全部，1-用户，2-商家',
++  `status` TINYINT DEFAULT 1 COMMENT '状态：0-下线，1-发布',
++  `publisher_id` BIGINT DEFAULT NULL COMMENT '发布者ID',
++  `publish_time` DATETIME DEFAULT NULL COMMENT '发布时间',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
++  `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除',
++  PRIMARY KEY (`id`),
++  KEY `idx_status` (`status`),
++  KEY `idx_target_type` (`target_type`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统公告表';
++
++-- 聊天消息表
++CREATE TABLE `chat_message` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '消息ID',
++  `from_user_id` BIGINT NOT NULL COMMENT '发送者ID',
++  `from_user_type` TINYINT NOT NULL COMMENT '发送者类型：1-用户，2-商家，3-客服',
++  `to_user_id` BIGINT NOT NULL COMMENT '接收者ID',
++  `to_user_type` TINYINT NOT NULL COMMENT '接收者类型：1-用户，2-商家，3-客服',
++  `content` TEXT NOT NULL COMMENT '消息内容',
++  `content_type` TINYINT DEFAULT 0 COMMENT '内容类型：0-文本，1-图片',
++  `is_read` TINYINT DEFAULT 0 COMMENT '是否已读：0-未读，1-已读',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
++  PRIMARY KEY (`id`),
++  KEY `idx_from_user` (`from_user_id`, `from_user_type`),
++  KEY `idx_to_user` (`to_user_id`, `to_user_type`),
++  KEY `idx_create_time` (`create_time`)
++ ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天消息表';
++
++-- 购物车表（持久化示例）
++CREATE TABLE `cart_item` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT,
++  `user_id` BIGINT NOT NULL,
++  `merchant_id` BIGINT NOT NULL,
++  `food_id` BIGINT NOT NULL,
++  `quantity` INT NOT NULL DEFAULT 1,
++  `price` DECIMAL(10,2) DEFAULT NULL,
++  `food_name` VARCHAR(255) DEFAULT NULL,
++  `food_image` VARCHAR(255) DEFAULT NULL,
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
++  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
++  PRIMARY KEY (`id`),
++  KEY `idx_user_id` (`user_id`),
++  KEY `idx_food_id` (`food_id`),
++  KEY `idx_merchant_id` (`merchant_id`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='购物车项表';
++
++-- 用户收藏表（商家收藏）
++CREATE TABLE `user_favorite` (
++  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'ID',
++  `user_id` BIGINT NOT NULL COMMENT '用户ID',
++  `merchant_id` BIGINT NOT NULL COMMENT '商家ID',
++  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '收藏时间',
++  PRIMARY KEY (`id`),
++  UNIQUE KEY `uk_user_merchant` (`user_id`, `merchant_id`),
++  KEY `idx_user_id` (`user_id`),
++  KEY `idx_merchant_id` (`merchant_id`)
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户收藏表';
+diff --git a/web-admin/src/views/MerchantManagement.vue b/web-admin/src/views/MerchantManagement.vue
+new file mode 100644
+index 0000000..eb923d3
+--- /dev/null
++++ b/web-admin/src/views/MerchantManagement.vue
+@@ -0,0 +1,498 @@
++<template>
++  <div class="merchant-management">
++    <el-card>
++      <!-- 使用标签页区分商家列表和审核管理 -->
++      <el-tabs v-model="activeTab" @tab-click="handleTabChange">
++        <el-tab-pane label="商家列表" name="list">
++          <!-- 搜索栏 -->
++          <el-form :inline="true" class="search-form">
++            <el-form-item label="商家名称">
++              <el-input v-model="searchForm.name" placeholder="请输入商家名称" clearable />
++            </el-form-item>
++            <el-form-item label="状态">
++              <el-select v-model="searchForm.status" placeholder="全部" clearable>
++                <el-option label="营业中" :value="1" />
++                <el-option label="休息中" :value="2" />
++              </el-select>
++            </el-form-item>
++            <el-form-item>
++              <el-button type="primary" :icon="Search" @click="loadMerchants">搜索</el-button>
++              <el-button :icon="Refresh" @click="resetSearch">重置</el-button>
++            </el-form-item>
++          </el-form>
++
++          <!-- 商家表格 -->
++          <el-table :data="merchants" border stripe v-loading="loading">
++            <el-table-column prop="logo" label="店铺图片" width="100">
++              <template #default="scope">
++                <el-image
++                  :src="imageBase(scope.row.logo) || defaultLogo"
++                  fit="cover"
++                  style="width: 60px; height: 60px; border-radius: 8px;"
++                />
++              </template>
++            </el-table-column>
++            <el-table-column prop="merchantName" label="商家名称" />
++            <el-table-column prop="phone" label="联系电话" />
++            <el-table-column prop="contactPhone" label="商家电话" />
++            <el-table-column label="地址" min-width="200">
++              <template #default="scope">
++                {{ formatAddress(scope.row) }}
++              </template>
++            </el-table-column>
++            <el-table-column prop="avgRating" label="评分" width="120">
++              <template #default="scope">
++                <el-rate v-model="scope.row.avgRating" disabled show-score allow-half />
++              </template>
++            </el-table-column>
++            <el-table-column prop="salesVolume" label="销量" width="80" />
++            <el-table-column prop="deliveryFee" label="配送费" width="80">
++              <template #default="scope">
++                ¥{{ scope.row.deliveryFee || 0 }}
++              </template>
++            </el-table-column>
++            <el-table-column prop="minOrderAmount" label="起送价" width="80">
++              <template #default="scope">
++                ¥{{ scope.row.minOrderAmount || 0 }}
++              </template>
++            </el-table-column>
++            <el-table-column prop="status" label="状态" width="100">
++              <template #default="scope">
++                <el-tag :type="getStatusType(scope.row.status)">
++                  {{ getStatusText(scope.row.status) }}
++                </el-tag>
++              </template>
++            </el-table-column>
++            <el-table-column label="操作" width="200" fixed="right">
++              <template #default="scope">
++                <el-button size="small" @click="handleView(scope.row)">查看</el-button>
++                <el-button
++                  size="small"
++                  :type="scope.row.status === 1 ? 'warning' : 'success'"
++                  @click="handleToggleStatus(scope.row)"
++                >
++                  {{ scope.row.status === 1 ? '停业' : '营业' }}
++                </el-button>
++              </template>
++            </el-table-column>
++          </el-table>
++
++          <!-- 分页 -->
++          <el-pagination
++            @size-change="handleSizeChange"
++            @current-change="handleCurrentChange"
++            :current-page="pagination.current"
++            :page-sizes="[10, 20, 50, 100]"
++            :page-size="pagination.size"
++            :total="pagination.total"
++            layout="total, sizes, prev, pager, next, jumper"
++            style="margin-top: 20px; text-align: right"
++          />
++        </el-tab-pane>
++
++        <el-tab-pane label="商家审核" name="audit">
++          <!-- 审核搜索栏 -->
++          <el-form :inline="true" class="search-form">
++            <el-form-item label="商家名称">
++              <el-input v-model="auditSearchForm.name" placeholder="请输入商家名称" clearable />
++            </el-form-item>
++            <el-form-item>
++              <el-button type="primary" :icon="Search" @click="loadPendingMerchants">搜索</el-button>
++              <el-button :icon="Refresh" @click="resetAuditSearch">重置</el-button>
++            </el-form-item>
++          </el-form>
++
++          <!-- 待审核商家表格 -->
++          <el-table :data="pendingMerchants" border stripe v-loading="auditLoading">
++            <el-table-column prop="logo" label="店铺图片" width="100">
++              <template #default="scope">
++                <el-image
++                  :src="imageBase(scope.row.logo) || defaultLogo"
++                  fit="cover"
++                  style="width: 60px; height: 60px; border-radius: 8px;"
++                />
++              </template>
++            </el-table-column>
++            <el-table-column prop="merchantName" label="商家名称" />
++            <el-table-column prop="contactPerson" label="联系人" />
++            <el-table-column prop="contactPhone" label="联系电话" />
++            <el-table-column label="地址" min-width="200">
++              <template #default="scope">
++                {{ formatAddress(scope.row) }}
++              </template>
++            </el-table-column>
++            <el-table-column prop="licenseNumber" label="营业执照号" width="150" />
++            <el-table-column label="申请时间" width="160">
++              <template #default="scope">
++                {{ formatTime(scope.row.createTime) }}
++              </template>
++            </el-table-column>
++            <el-table-column label="拒绝原因" width="180">
++              <template #default="scope">
++                <span v-if="scope.row.status === 4">{{ scope.row.rejectReason || '-' }}</span>
++                <span v-else class="text-gray">-</span>
++              </template>
++            </el-table-column>
++            <el-table-column label="操作" width="200" fixed="right">
++              <template #default="scope">
++                <el-button size="small" @click="handleView(scope.row)">查看</el-button>
++                <el-button v-if="scope.row.status === 0" size="small" type="primary" @click="handleApprove(scope.row)">通过</el-button>
++                <el-button v-if="scope.row.status === 0" size="small" type="danger" @click="handleReject(scope.row)">拒绝</el-button>
++              </template>
++            </el-table-column>
++          </el-table>
++
++          <!-- 审核分页 -->
++          <el-pagination
++            @size-change="handleAuditSizeChange"
++            @current-change="handleAuditCurrentChange"
++            :current-page="auditPagination.current"
++            :page-sizes="[10, 20, 50, 100]"
++            :page-size="auditPagination.size"
++            :total="auditPagination.total"
++            layout="total, sizes, prev, pager, next, jumper"
++            style="margin-top: 20px; text-align: right"
++          />
++        </el-tab-pane>
++      </el-tabs>
++    </el-card>
++
++    <!-- 商家详情对话框 -->
++    <el-dialog v-model="detailDialogVisible" title="商家详情" width="700px">
++      <div v-if="currentMerchant" class="merchant-detail">
++        <div class="merchant-header">
++          <el-image
++            :src="imageBase(currentMerchant.logo) || defaultLogo"
++            fit="cover"
++            class="merchant-logo"
++          />
++          <div class="merchant-basic">
++            <h3>{{ currentMerchant.merchantName }}</h3>
++            <el-rate v-model="currentMerchant.avgRating" disabled show-score allow-half />
++            <p class="merchant-status">
++              <el-tag :type="getStatusType(currentMerchant.status)">
++                {{ getStatusText(currentMerchant.status) }}
++              </el-tag>
++            </p>
++          </div>
++        </div>
++        
++        <el-descriptions :column="2" border>
++          <el-descriptions-item label="商家ID">{{ currentMerchant.id }}</el-descriptions-item>
++          <el-descriptions-item label="登录手机">{{ currentMerchant.phone }}</el-descriptions-item>
++          <el-descriptions-item label="联系人">{{ currentMerchant.contactPerson || '未设置' }}</el-descriptions-item>
++          <el-descriptions-item label="联系电话">{{ currentMerchant.contactPhone || '未设置' }}</el-descriptions-item>
++          <el-descriptions-item label="所在地区" :span="2">
++            {{ formatAddress(currentMerchant) }}
++          </el-descriptions-item>
++          <el-descriptions-item label="详细地址" :span="2">
++            {{ currentMerchant.detailAddress || '未设置' }}
++          </el-descriptions-item>
++          <el-descriptions-item label="营业执照号">{{ currentMerchant.licenseNumber || '未设置' }}</el-descriptions-item>
++          <el-descriptions-item label="商家分类ID">{{ currentMerchant.categoryId || '未设置' }}</el-descriptions-item>
++          <el-descriptions-item label="平均评分">{{ currentMerchant.avgRating || 5 }}</el-descriptions-item>
++          <el-descriptions-item label="总销量">{{ currentMerchant.salesVolume || 0 }}</el-descriptions-item>
++          <el-descriptions-item label="起送价">¥{{ currentMerchant.minOrderAmount || 0 }}</el-descriptions-item>
++          <el-descriptions-item label="配送费">¥{{ currentMerchant.deliveryFee || 0 }}</el-descriptions-item>
++          <el-descriptions-item label="营业时间">{{ currentMerchant.businessHours || '未设置' }}</el-descriptions-item>
++          <el-descriptions-item label="创建时间" :span="2">
++            {{ formatTime(currentMerchant.createTime) }}
++          </el-descriptions-item>
++          <el-descriptions-item label="商家简介" :span="2">
++            {{ currentMerchant.description || '暂无简介' }}
++          </el-descriptions-item>
++        </el-descriptions>
++      </div>
++    </el-dialog>
++  </div>
++</template>
++
++<script>
++import { markRaw } from 'vue';
++import { getMerchantList, updateMerchantStatus, getPendingMerchants, approveMerchant } from '../api/merchant';
++import { Search, Refresh } from '@element-plus/icons-vue';
++
++export default {
++  name: 'MerchantManagement',
++  data() {
++    return {
++      // 图标组件
++      Search: markRaw(Search),
++      Refresh: markRaw(Refresh),
++      // 默认Logo
++      defaultLogo: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2EwYTBhMCI+5biM5Z+O5bqPPC90ZXh0Pjwvc3ZnPg==',
++      // 当前激活的标签页
++      activeTab: 'list',
++      // 商家列表数据
++      searchForm: {
++        name: '',
++        status: 1
++      },
++      merchants: [],
++      loading: false,
++      pagination: {
++        current: 1,
++        size: 10,
++        total: 0
++      },
++      // 审核数据
++      auditSearchForm: {
++        name: ''
++      },
++      pendingMerchants: [],
++      auditLoading: false,
++      auditPagination: {
++        current: 1,
++        size: 10,
++        total: 0
++      },
++      // 详情对话框
++      detailDialogVisible: false,
++      currentMerchant: null
++    };
++  },
++  mounted() {
++    this.loadMerchants();
++  },
++  methods: {
++    // 标签页切换
++    handleTabChange(tab) {
++      if (tab.name === 'audit') {
++        this.loadPendingMerchants();
++      }
++    },
++    // 加载商家列表
++    async loadMerchants() {
++      this.loading = true;
++      try {
++        const params = {
++          keyword: this.searchForm.name,
++          status: this.searchForm.status,
++          pageNum: this.pagination.current,
++          pageSize: this.pagination.size
++        };
++        const response = await getMerchantList(params);
++        this.merchants = response.records || [];
++        this.pagination.total = response.total || 0;
++      } catch (error) {
++        this.$message.error('加载商家列表失败');
++        console.error(error);
++      } finally {
++        this.loading = false;
++      }
++    },
++    resetSearch() {
++      this.searchForm = { name: '', status: 1 };
++      this.pagination.current = 1;
++      this.loadMerchants();
++    },
++    // 加载待审核商家
++    async loadPendingMerchants() {
++      this.auditLoading = true;
++      try {
++        const params = {
++          keyword: this.auditSearchForm.name,
++          pageNum: this.auditPagination.current,
++          pageSize: this.auditPagination.size
++        };
++        const response = await getPendingMerchants(params);
++        this.pendingMerchants = response.records || [];
++        this.auditPagination.total = response.total || 0;
++      } catch (error) {
++        this.$message.error('加载待审核商家失败');
++        console.error(error);
++      } finally {
++        this.auditLoading = false;
++      }
++    },
++    resetAuditSearch() {
++      this.auditSearchForm = { name: '' };
++      this.auditPagination.current = 1;
++      this.loadPendingMerchants();
++    },
++    // 图片路径处理
++    imageBase(path) {
++      if (!path) return ''
++      if (path.startsWith('http')) return path
++      const baseUrl = import.meta.env.VITE_IMAGE_BASE_URL || ''
++      if (path.startsWith('/images/')) return `${baseUrl}${path}`
++      if (path.startsWith('images/')) return `${baseUrl}/${path}`
++      return `${baseUrl}/images/${path}`
++    },
++    // 查看商家详情
++    handleView(row) {
++      this.currentMerchant = row;
++      this.detailDialogVisible = true;
++    },
++    // 切换营业状态
++    async handleToggleStatus(row) {
++      const newStatus = row.status === 1 ? 2 : 1;
++      try {
++        await this.$confirm(`确定要${newStatus === 1 ? '开启营业' : '停业'}吗?`, '提示', {
++          type: 'warning'
++        });
++
++        await updateMerchantStatus(row.id, newStatus);
++        row.status = newStatus;
++        this.$message.success('操作成功');
++      } catch (error) {
++        if (error !== 'cancel') {
++          this.$message.error('操作失败');
++          console.error(error);
++        }
++      }
++    },
++    // 审核通过
++    async handleApprove(row) {
++      try {
++        await this.$confirm('确定要通过该商家的入驻申请吗?', '提示', {
++          type: 'warning'
++        });
++
++        await approveMerchant(row.id, 1, '');
++        this.$message.success('审核通过');
++        this.loadPendingMerchants();
++      } catch (error) {
++        if (error !== 'cancel') {
++          this.$message.error('审核失败');
++          console.error(error);
++        }
++      }
++    },
++    // 审核拒绝
++    async handleReject(row) {
++      try {
++        const { value: reason } = await this.$prompt('请输入拒绝原因', '提示', {
++          confirmButtonText: '确定',
++          cancelButtonText: '取消',
++          inputValidator: (value) => {
++            if (!value || value.trim() === '') {
++              return '请输入拒绝原因';
++            }
++            return true;
++          }
++        });
++
++        await approveMerchant(row.id, 4, reason);
++        this.$message.success('已拒绝该申请');
++        this.loadPendingMerchants();
++      } catch (error) {
++        if (error !== 'cancel') {
++          this.$message.error('操作失败');
++          console.error(error);
++        }
++      }
++    },
++    // 分页方法
++    handleSizeChange(val) {
++      this.pagination.size = val;
++      this.loadMerchants();
++    },
++    handleCurrentChange(val) {
++      this.pagination.current = val;
++      this.loadMerchants();
++    },
++    handleAuditSizeChange(val) {
++      this.auditPagination.size = val;
++      this.loadPendingMerchants();
++    },
++    handleAuditCurrentChange(val) {
++      this.auditPagination.current = val;
++      this.loadPendingMerchants();
++    },
++    // 格式化地址
++    formatAddress(merchant) {
++      const parts = [];
++      if (merchant.province) parts.push(merchant.province);
++      if (merchant.city) parts.push(merchant.city);
++      if (merchant.district) parts.push(merchant.district);
++      return parts.join('') || '未设置';
++    },
++    // 格式化时间
++    formatTime(time) {
++      if (!time) return '-';
++      const date = new Date(time);
++      return date.toLocaleString('zh-CN');
++    },
++    // 获取状态文本
++    getStatusText(status) {
++      const map = { 0: '待审核', 1: '营业中', 2: '休息中', 3: '已下架', 4: '已拒绝' };
++      return map[status] || '未知';
++    },
++    // 获取状态类型
++    getStatusType(status) {
++      const map = { 0: 'warning', 1: 'success', 2: 'info', 3: 'danger', 4: 'danger' };
++      return map[status] || 'info';
++    }
++  }
++};
++</script>
++
++<style scoped>
++.merchant-management {
++  padding: 20px;
++}
++
++.search-form {
++  margin-bottom: 20px;
++}
++
++:deep(.el-card) {
++  border-radius: 12px;
++  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
++  border: none;
++}
++
++:deep(.el-button--primary) {
++  background: linear-gradient(135deg, #ff8c00 0%, #ffa033 100%);
++  border: none;
++}
++
++:deep(.el-tabs__item.is-active) {
++  color: #ff8c00;
++}
++
++:deep(.el-tabs__active-bar) {
++  background-color: #ff8c00;
++}
++
++.merchant-detail {
++  padding: 10px;
++}
++
++.merchant-header {
++  display: flex;
++  gap: 20px;
++  margin-bottom: 20px;
++  padding-bottom: 20px;
++  border-bottom: 1px solid #eee;
++}
++
++.merchant-logo {
++  width: 120px;
++  height: 120px;
++  border-radius: 12px;
++  object-fit: cover;
++}
++
++.merchant-basic {
++  flex: 1;
++  display: flex;
++  flex-direction: column;
++  justify-content: center;
++}
++
++.merchant-basic h3 {
++  margin: 0 0 10px 0;
++  font-size: 20px;
++  color: #333;
++}
++
++.merchant-status {
++  margin: 10px 0 0 0;
++}
++
++.text-gray {
++  color: #999;
++}
++</style>
+-- 
+2.52.0.windows.1
+

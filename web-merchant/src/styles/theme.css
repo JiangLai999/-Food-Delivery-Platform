@@ -1,0 +1,82 @@
+:root {
+  --el-color-primary: #ff8c00;
+  --el-color-primary-light-3: #ffa533;
+  --el-color-primary-light-5: #ffb866;
+  --el-color-primary-light-7: #ffca99;
+  --el-color-primary-light-9: #ffddcc;
+  --el-color-primary-dark-2: #cc7000;
+}
+
+body {
+  background-color: #f5f7fa;
+}
+
+.el-button--primary {
+  --el-button-bg-color: #ff8c00;
+  --el-button-border-color: #ff8c00;
+  --el-button-hover-bg-color: #ffa033;
+  --el-button-hover-border-color: #ffa033;
+  --el-button-active-bg-color: #cc7000;
+  --el-button-active-border-color: #cc7000;
+}
+
+.el-menu--horizontal > .el-menu-item.is-active {
+  border-bottom-color: #ff8c00;
+  color: #ff8c00;
+}
+
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background-color: #ff8c00;
+  border-color: #ff8c00;
+}
+
+.el-checkbox__input.is-checked + .el-checkbox__label {
+  color: #ff8c00;
+}
+
+.el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px #ff8c00 inset;
+}
+
+.el-select .el-input.is-focus .el-input__wrapper {
+  box-shadow: 0 0 0 1px #ff8c00 inset;
+}
+
+.page-container {
+  padding: 20px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.stat-card .stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.stat-card .stat-value {
+  font-size: 28px;
+  font-weight: 600;
+  color: #303133;
+  margin: 8px 0;
+}
+
+.stat-card .stat-label {
+  font-size: 14px;
+  color: #909399;
+}

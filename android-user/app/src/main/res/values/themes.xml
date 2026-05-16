@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme - Material Design 3 -->
+    <style name="Theme.FoodDelivery" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary brand colors -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorPrimaryContainer">@color/primary_light</item>
+        <item name="colorOnPrimary">@color/text_on_primary</item>
+        <item name="colorOnPrimaryContainer">@color/primary</item>
+        
+        <!-- Secondary brand colors -->
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="colorSecondaryContainer">@color/accent</item>
+        <item name="colorOnSecondary">@color/text_on_secondary</item>
+        <item name="colorOnSecondaryContainer">@color/secondary</item>
+        
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@color/primary_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
+        
+        <!-- Background colors -->
+        <item name="android:colorBackground">@color/background</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorSurfaceVariant">@color/surface_variant</item>
+        
+        <!-- Text colors -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+        
+        <!-- Error colors -->
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/white</item>
+        
+        <!-- Ripple color -->
+        <item name="colorControlHighlight">@color/ripple_color</item>
+        
+        <!-- Component styles -->
+        <item name="materialButtonStyle">@style/Widget.FoodDelivery.Button</item>
+        <item name="textInputStyle">@style/Widget.FoodDelivery.TextInputLayout</item>
+        <item name="cardViewStyle">@style/Widget.FoodDelivery.CardView</item>
+        
+        <!-- Animation -->
+        <item name="android:windowContentTransitions">true</item>
+        <item name="android:windowActivityTransitions">true</item>
+    </style>
+    
+    <!-- Splash Theme -->
+    <style name="Theme.FoodDelivery.Splash" parent="Theme.FoodDelivery">
+        <item name="android:windowBackground">@drawable/bg_splash</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
+    
+    <!-- Button Styles -->
+    <style name="Widget.FoodDelivery.Button" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/primary</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="elevation">2dp</item>
+    </style>
+    
+    <style name="Widget.FoodDelivery.Button.Secondary">
+        <item name="backgroundTint">@color/secondary</item>
+    </style>
+    
+    <style name="Widget.FoodDelivery.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="strokeColor">@color/primary</item>
+        <item name="android:textColor">@color/primary</item>
+        <item name="cornerRadius">12dp</item>
+    </style>
+    
+    <style name="Widget.FoodDelivery.Button.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">@color/primary</item>
+    </style>
+    
+    <!-- Card Style -->
+    <style name="Widget.FoodDelivery.CardView" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">4dp</item>
+        <item name="contentPadding">16dp</item>
+    </style>
+    
+    <!-- TextInputLayout Style -->
+    <style name="Widget.FoodDelivery.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">12dp</item>
+        <item name="boxCornerRadiusTopEnd">12dp</item>
+        <item name="boxCornerRadiusBottomStart">12dp</item>
+        <item name="boxCornerRadiusBottomEnd">12dp</item>
+        <item name="boxStrokeColor">@color/primary</item>
+    </style>
+    
+    <!-- Toolbar Style -->
+    <style name="Widget.FoodDelivery.Toolbar" parent="Widget.Material3.Toolbar">
+        <item name="titleTextColor">@color/white</item>
+        <item name="android:background">@color/primary</item>
+        <item name="elevation">4dp</item>
+    </style>
+    
+    <!-- BottomNavigation Style -->
+    <style name="Widget.FoodDelivery.BottomNavigation" parent="Widget.Material3.BottomNavigationView">
+        <item name="itemIconTint">@color/bottom_nav_color</item>
+        <item name="itemTextColor">@color/bottom_nav_color</item>
+        <item name="backgroundColor">@color/surface</item>
+        <item name="elevation">8dp</item>
+    </style>
+    
+    <!-- Chip Style -->
+    <style name="Widget.FoodDelivery.Chip" parent="Widget.Material3.Chip.Assist">
+        <item name="chipBackgroundColor">@color/bg_input</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+    
+    <!-- Badge Style -->
+    <style name="Widget.FoodDelivery.Badge" parent="Widget.Material3.Badge">
+        <item name="backgroundColor">@color/error</item>
+    </style>
+</resources>

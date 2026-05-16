@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">秒送餐</string>
+    <string name="home">首页</string>
+    <string name="orders">订单</string>
+    <string name="profile">我的</string>
+    <string name="login">登录</string>
+    <string name="register">注册</string>
+    <string name="logout">退出登录</string>
+    <string name="search_hint">搜索商家或美食</string>
+    <string name="confirm_order">确认订单</string>
+    <string name="submit_order">提交订单</string>
+    <string name="cancel">取消</string>
+    <string name="confirm">确认</string>
+    <!-- 服务器地址配置：模拟器用 10.0.2.2，真机用电脑实际IP地址 -->
+    <string name="api_base_url" translatable="false">http://192.168.1.11:8080/api/</string>
+    <string name="bottom_nav_home">首页</string>
+    <string name="bottom_nav_orders">订单</string>
+    <string name="bottom_nav_profile">我的</string>
+    <string name="home_search_hint">搜索美食或商家</string>
+    <string name="locating">定位中…</string>
+    <string name="merchant_name_placeholder">肯德基</string>
+    <string name="rating_placeholder">4.8</string>
+    <string name="delivery_info_placeholder">起送 ¥20 | 配送 ¥5 | 30分钟</string>
+    <string name="notice_placeholder">欢迎光临</string>
+    <string name="track_order">跟踪订单</string>
+
+    <!-- Merchant Adapter Strings -->
+    <string name="merchant_name_unknown">未知商家</string>
+    <string name="merchant_status_open">营业中</string>
+    <string name="merchant_status_closed">休息中</string>
+    <string name="merchant_rating_default">4.5</string>
+    <string name="merchant_sales_volume_k">Monthly %dk+ Sold</string>
+    <string name="merchant_sales_volume">Monthly %d Sold</string>
+    <string name="merchant_sales_volume_default">Monthly 1k+ Sold</string>
+    <string name="merchant_delivery_time_default">20-30 min</string>
+    <string name="merchant_delivery_info">起送￥%1$s | 配送费￥%2$s</string>
+    <string name="merchant_notice_prefix">公告：%s</string>
+    <string name="merchant_notice_default">欢迎光临</string>
+</resources>

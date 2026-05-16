@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand">#FF6F00</color>
+    <color name="brand_dark">#C43E00</color>
+    <color name="brand_light">#FFA040</color>
+
+    <color name="text_primary">#DE000000</color>
+    <color name="text_secondary">#99000000</color>
+    <color name="text_tertiary">#61000000</color>
+    <color name="text_primary_inverse">#FFFFFFFF</color>
+    <color name="text_hint">#99000000</color>
+    <color name="primary">#FF6F00</color>
+    <color name="colorPrimary">#FF6F00</color>
+    <color name="primary_dark">#C43E00</color>
+    <color name="primary_light">#FFA040</color>
+    <color name="text_on_primary">#FFFFFF</color>
+    <color name="secondary">#FF9800</color>
+    <color name="accent">#FF6F00</color>
+    <color name="text_on_secondary">#000000</color>
+    <color name="background">#F5F5F5</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#EEEEEE</color>
+    <color name="ripple_color">#1A000000</color>
+
+
+    <color name="background_surface">#F5F5F5</color>
+    <color name="background_card">#FFFFFF</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="bg_input">#F5F5F5</color>
+
+    <color name="white">#FFFFFF</color>
+    <color name="white_alpha_10">#1AFFFFFF</color>
+    <color name="black">#000000</color>
+
+    <color name="green">#4CAF50</color>
+    <color name="orange">#FF9800</color>
+    <color name="blue">#2196F3</color>
+    <color name="pink">#E91E63</color>
+    <color name="indigo">#3F51B5</color>
+    <color name="rating_star">#FFC107</color>
+
+    <color name="button_primary_text">#FFFFFF</color>
+    <color name="button_secondary_text">#DE000000</color>
+    <color name="input_text">#DE000000</color>
+    <color name="input_hint">#99000000</color>
+    <color name="text_body">#99000000</color>
+    <color name="slate_300">#D1D5DB</color>
+    <color name="slate_900">#1F2937</color>
+    <color name="slate_100">#F3F4F6</color>
+    <color name="error">#D32F2F</color>
+    <color name="light_gray">#D3D3D3</color>
+    <color name="warning">#FFA000</color>
+    <color name="info">#1976D2</color>
+    <color name="success">#4CAF50</color>
+
+    <color name="badge_gray">#9E9E9E</color>
+    <color name="badge_green">#4CAF50</color>
+    <color name="badge_orange">#FF9800</color>
+    <color name="login_outline_button_bg">#00000000</color>
+    <color name="login_outline_button_border">#FF6F00</color>
+    <color name="divider">#1F000000</color>
+    <color name="bg_gray_100">#F5F5F5</color>
+    <color name="glass_surface">#80FFFFFF</color>
+    <color name="glass_border">#80FFFFFF</color>
+    <color name="login_button_bg">#FF6F00</color>
+    <color name="login_input_bg">#FFFFFF</color>
+    <color name="login_input_border">#E0E0E0</color>
+    <color name="login_input_focus">#FF6F00</color>
+    <color name="login_logo_bg">#FF6F00</color>
+    <color name="recommend_location">#42000000</color>
+    <color name="recommend_popular">#F59E0B</color>
+    <color name="recommend_preference">#10B981</color>
+    <color name="recommend_time">#F97316</color>
+    <color name="bg_gray">#F1F5F9</color>
+    <color name="brand_5">#FFF7ED</color>
+    <color name="brand_10">#FFEDD5</color>
+    <color name="background_white">#FFFFFF</color>
+    <color name="login_icon">#F97316</color>
+    <color name="colorAccent">#F97316</color>
+    <color name="login_bg">#FFFFFF</color>
+    <color name="login_title">#0F172A</color>
+    <color name="login_subtitle">#64748B</color>
+    <color name="login_text_gray">#94A3B8</color>
+    <color name="login_outline_button_text">#F97316</color>
+    <color name="login_button_text">#FFFFFF</color>
+    <color name="login_text_light">#CBD5E1</color>
+    <color name="bg_divider">#E2E8F0</color>
+    <color name="bg_home_header">#F97316</color>
+</resources>

@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 网络权限 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <!-- 定位权限 -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
+    <!-- 存储权限 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
+    <!-- 相机权限 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <!-- 通知权限 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <application
+        android:name=".FoodDeliveryApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.FoodDeliveryNew"
+        android:usesCleartextTraffic="true"
+        tools:targetApi="31">
+
+        <!-- 高德地图Key -->
+        <meta-data
+            android:name="com.amap.api.v2.apikey"
+            android:value="f3fee95358618293dd1b023340fca63f" />
+
+        <!-- 登录页（启动页） -->
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeLoginActivity"
+            android:exported="true"
+            android:theme="@style/Theme.FoodDeliveryNew"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 主页 -->
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeMainActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+
+        <!-- 其他Compose Activities -->
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeProfileActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeDeliveryTrackingActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeHomeActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeProductDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeCheckoutActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeCartActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeOrderListActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposePaymentSuccessActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeWalletActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeRechargeActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeAddressListActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeSearchActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeCouponActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeCustomerServiceActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeReviewActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeReviewDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeNotificationsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeRegisterActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeForgotPasswordActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeMerchantChatActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeAdminChatActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeReviewDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+        <activity
+            android:name="com.fooddelivery.user.ui.compose.ComposeFavoritesActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FoodDeliveryNew" />
+
+     </application>
+
+</manifest>
