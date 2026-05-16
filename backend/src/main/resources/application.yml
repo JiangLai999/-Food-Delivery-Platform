@@ -23,7 +23,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/food_delivery?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
-    password: 123456
+    password: ${DB_PASSWORD:your_database_password_here}
     druid:
       initial-size: 5
       min-idle: 5
@@ -70,12 +70,12 @@ springfox:
 
 # JWT配置
 jwt:
-  secret: foodDeliverySystemSecretKey2024ForGraduationProject
+  secret: ${JWT_SECRET:your_jwt_secret_key_here_min_32_chars}
   expiration: 604800000  # 7天，单位毫秒
 
 # 高德地图配置
 amap:
-  key: a4d6ee2613113ed2072b9b771cce3ab1  # 高德地图Key
+  key: ${AMAP_KEY:your_amap_api_key_here}
   service-url: https://restapi.amap.com/v3
 
 # 骑手模拟配置
