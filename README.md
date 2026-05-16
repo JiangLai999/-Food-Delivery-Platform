@@ -1,5 +1,11 @@
 # FoodDelivery - 全栈外卖配送平台 / Full-Stack Food Delivery Platform
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7.18-brightgreen)](https://spring.io/projects/spring-boot)
+[![Java](https://img.shields.io/badge/Java-11-orange)](https://www.oracle.com/java/)
+[![Vue](https://img.shields.io/badge/Vue-3-green)](https://vuejs.org/)
+[![Kotlin](https://img.shields.io/badge/Kotlin-Jetpack%20Compose-purple)](https://developer.android.com/compose)
+
 ---
 
 ## 项目简介 / Project Overview
